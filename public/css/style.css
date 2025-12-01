@@ -614,6 +614,45 @@ tbody tr:last-child td {
     font-weight: 400;
 }
 
+/* Banner Section */
+.banner-section {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.banner-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
+/* Social Media Icons */
+.social-media-links {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+}
+
+.social-link {
+    display: inline-block;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.social-link:hover {
+    transform: scale(1.1);
+    opacity: 0.8;
+}
+
+.social-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+}
+
 /* Color underlay for sections - Matching Wix implementation */
 .color-underlay {
     position: relative;
