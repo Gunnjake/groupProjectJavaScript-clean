@@ -71,3 +71,4 @@ Create a `.env` file from `.env.example`:
 - **Change navigation**: Edit `views/partials/header.ejs`
 - **Update authentication logic**: Edit `middleware/auth.js` and `routes/auth.js`
 
+

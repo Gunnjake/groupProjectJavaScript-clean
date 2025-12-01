@@ -10,7 +10,7 @@
     const programs = [
             {
                 title: 'BALLET FOLKLORICO',
-                image: '/images/ballet-folklorico.avif',
+                image: '/images/ballet-folklorico-cropped.jpg',
                 fallbackImage: '/images/ballet-folklorico-single.png',
             description: 'Our art program fosters joy, confidence, and creative self-expression rooted in culture through Latin American Folk dance.',
             details: [
@@ -23,7 +23,7 @@
         },
             {
                 title: 'MARIACHI',
-                image: '/images/mariachi.avif',
+                image: '/images/mariachi-cropped.jpg',
                 fallbackImage: '/images/mariachi-single.png',
             description: 'We love mariachi music so we have created a female mariachi band! Our mariachi program relaunched in spring of 2025. All levels of music proficiency are welcome! Join us!',
             details: [],
@@ -180,11 +180,12 @@
     max-height: 500px;
     display: flex;
     align-items: flex-start;
+    border-radius: 8px;
 }
 
 .program-featured-image img {
     width: 100%;
-    height: auto;
+    height: 100%;
     min-height: 400px;
     object-fit: cover;
     object-position: top center;

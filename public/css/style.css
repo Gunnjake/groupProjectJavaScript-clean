@@ -147,7 +147,7 @@ body {
 }
 
 .logo-img {
-    height: 50px;
+    height: 80px;
     width: auto;
     margin-right: 0.75rem;
     object-fit: contain;
@@ -294,6 +294,25 @@ body {
 .section-full.pink-bg {
     background-color: var(--pink-bg);
     position: relative;
+}
+
+/* Butterfly Image with White Circle Background */
+.butterfly-image-wrapper {
+    display: inline-block;
+    position: relative;
+    margin: 2rem 0;
+    padding: 2rem;
+    background: var(--white);
+    border-radius: 50%;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.butterfly-image {
+    max-width: 200px;
+    height: auto;
+    display: block;
+    position: relative;
+    z-index: 1;
 }
 
 /* Page Headers - Matching Ella Rises typography */
