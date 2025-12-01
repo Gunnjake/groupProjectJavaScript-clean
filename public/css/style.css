@@ -541,6 +541,79 @@ tbody tr:last-child td {
     z-index: 2;
 }
 
+/* New Hero Section with Circular Images - Matching actual website */
+.hero-section-pink {
+    background-color: var(--pink-bg);
+    padding: var(--space-xl) var(--space-md);
+    text-align: center;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.hero-content {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: var(--space-lg) 0;
+}
+
+.hero-title {
+    font-family: var(--font-header), serif;
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: var(--space-xl);
+    letter-spacing: -0.02em;
+}
+
+.hero-images-circle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-lg);
+    margin: var(--space-xl) 0;
+    flex-wrap: wrap;
+}
+
+.circle-image-wrapper {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: var(--card-shadow);
+    background-color: var(--white);
+}
+
+.circle-image-wrapper.logo-center {
+    width: 180px;
+    height: 180px;
+    z-index: 1;
+}
+
+.circle-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.logo-image {
+    object-fit: contain;
+    padding: var(--space-sm);
+    background-color: var(--text-dark);
+}
+
+.hero-description {
+    font-family: var(--font-body), Arial, Helvetica, sans-serif;
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    max-width: 800px;
+    margin: var(--space-xl) auto 0;
+    line-height: 1.7;
+    font-weight: 400;
+}
+
 /* Color underlay for sections - Matching Wix implementation */
 .color-underlay {
     position: relative;
@@ -820,6 +893,35 @@ footer.main-footer h4 {
         font-size: 1.1rem;
     }
 
+    .hero-section-pink {
+        padding: var(--space-lg) var(--space-md);
+    }
+
+    .hero-title {
+        font-size: 2rem;
+        margin-bottom: var(--space-lg);
+    }
+
+    .hero-images-circle {
+        gap: var(--space-md);
+        margin: var(--space-lg) 0;
+    }
+
+    .circle-image-wrapper {
+        width: 120px;
+        height: 120px;
+    }
+
+    .circle-image-wrapper.logo-center {
+        width: 140px;
+        height: 140px;
+    }
+
+    .hero-description {
+        font-size: 1rem;
+        margin-top: var(--space-lg);
+    }
+
     .page-header h1 {
         font-size: 2rem;
     }
@@ -853,6 +955,29 @@ footer.main-footer h4 {
 @media (max-width: 480px) {
     .hero-section h1 {
         font-size: 1.75rem;
+    }
+
+    .hero-title {
+        font-size: 1.5rem;
+    }
+
+    .hero-images-circle {
+        gap: var(--space-sm);
+    }
+
+    .circle-image-wrapper {
+        width: 80px;
+        height: 80px;
+    }
+
+    .circle-image-wrapper.logo-center {
+        width: 100px;
+        height: 100px;
+    }
+
+    .hero-description {
+        font-size: 0.9rem;
+        padding: 0 var(--space-md);
     }
 
     .program-card-content {
