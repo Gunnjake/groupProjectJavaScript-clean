@@ -1,9 +1,10 @@
 <%- include('../partials/header', { title: 'Ella Rises - Empowering the Future Generation of Women', user: typeof user !== 'undefined' ? user : null }) %>
 
-<!-- Hero Section with Circular Images - Matching actual website -->
+<!-- Hero section with circular program images -->
 <div class="hero-section-pink">
     <div class="hero-content">
         <h1 class="hero-title">WELCOME TO</h1>
+        <!-- Circular images showing programs -->
         <div class="hero-images-circle">
             <div class="circle-image-wrapper">
                 <img src="/images/ballet-folklorico.avif" alt="Ballet Folklorico" class="circle-image" onerror="this.onerror=null; this.src='/images/ballet-folklorico-single.png';">
@@ -25,7 +26,7 @@
     </div>
 </div>
 
-<!-- Girls Banner Image -->
+<!-- Banner image of participants -->
 <div class="banner-section">
     <img src="/images/banner-girls.avif" alt="Ella Rises Participants" class="banner-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
     <div class="image-placeholder large" style="display: none; width: 100%; min-height: 400px;">
@@ -44,80 +45,82 @@
     <p style="font-size: 1.2rem; width: 100%; margin: 2rem auto; padding: 0 2rem; max-width: none;">Our signature programs and the Ella Rises Summit serve over 150 young women each year!</p>
 </div>
 
+<!-- Programs section header -->
 <div class="page-header" style="margin-top: 4rem;">
-    <h1>PROGRAMS</h1>
+    <h2>PROGRAMS</h2>
 </div>
 
-<div class="programs-grid">
-    <div class="program-card" onclick="window.location.href='/programs'">
-        <img src="/images/ballet-folklorico.avif" alt="Ballet Folklorico" class="program-card-image" onerror="this.onerror=null; this.src='/images/ballet-folklorico-single.png'; this.nextElementSibling.style.display='none';">
+<!-- Program cards grid - 2x2 layout -->
+<div class="programs-grid" role="list">
+    <article class="program-card" role="listitem" tabindex="0" aria-label="Ballet Folklorico program" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href='/programs';}">
+        <img src="/images/ballet-folklorico.avif" alt="Ballet Folklorico dancers performing traditional Latin American folk dance" class="program-card-image" onerror="this.onerror=null; this.src='/images/ballet-folklorico-single.png'; this.nextElementSibling.style.display='none';">
         <div class="image-placeholder" style="display: none; height: 400px; margin: 0;">
             <div>Ballet Folklorico Image</div>
         </div>
         <div class="program-card-content">
             <div class="program-card-overlay" onclick="event.stopPropagation();">
-                <h3>BALLET FOLKLORICO</h3>
+                <h2>BALLET FOLKLORICO</h2>
                 <p>Our art program fosters joy, confidence, and creative self-expression rooted in culture through Latin American Folk dance.</p>
-                <a href="/register" class="btn btn-primary" onclick="event.stopPropagation();">Enroll</a>
-                <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation();">Donate</a>
+                <a href="/register" class="btn btn-primary" onclick="event.stopPropagation();" aria-label="Enroll in Ballet Folklorico program">Enroll</a>
+                <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation();" aria-label="Donate to Ella Rises (opens in new window)">Donate</a>
             </div>
         </div>
-    </div>
-    <div class="program-card" onclick="window.location.href='/programs?program=1'">
-        <img src="/images/mariachi.avif" alt="Mariachi" class="program-card-image" onerror="this.onerror=null; this.src='/images/mariachi-single.png'; this.nextElementSibling.style.display='none';">
+    </article>
+    <article class="program-card" role="listitem" tabindex="0" aria-label="Mariachi program" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href='/programs?program=1';}">
+        <img src="/images/mariachi.avif" alt="Female mariachi band members playing traditional Mexican music" class="program-card-image" onerror="this.onerror=null; this.src='/images/mariachi-single.png'; this.nextElementSibling.style.display='none';">
         <div class="image-placeholder" style="display: none; height: 400px; margin: 0;">
             <div>Mariachi Image</div>
         </div>
         <div class="program-card-content">
             <div class="program-card-overlay" onclick="event.stopPropagation();">
-                <h3>MARIACHI</h3>
+                <h2>MARIACHI</h2>
                 <p>We love mariachi music so we have created a female mariachi band! Our mariachi program relaunched in spring of 2025. All levels of music proficiency are welcome! Join us!</p>
-                <a href="/register" class="btn btn-primary" onclick="event.stopPropagation();">Enroll</a>
-                <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation();">Donate</a>
+                <a href="/register" class="btn btn-primary" onclick="event.stopPropagation();" aria-label="Enroll in Mariachi program">Enroll</a>
+                <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation();" aria-label="Donate to Ella Rises (opens in new window)">Donate</a>
             </div>
         </div>
-    </div>
-    <div class="program-card" onclick="window.location.href='/programs?program=2'">
-        <img src="/images/summit-2022.jpg" alt="Ella Rises Summit" class="program-card-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='none';">
+    </article>
+    <article class="program-card" role="listitem" tabindex="0" aria-label="Ella Rises Summit program" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href='/programs?program=2';}">
+        <img src="/images/summit-2022.jpg" alt="Ella Rises Summit participants at educational day camp" class="program-card-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='none';">
         <div class="image-placeholder" style="display: none; height: 400px; margin: 0;">
             <div>Ella Rises Summit Image</div>
         </div>
         <div class="program-card-content">
             <div class="program-card-overlay" onclick="event.stopPropagation();">
-                <h3>SUMMIT + EDUCATIONAL PATHWAYS</h3>
+                <h2>SUMMIT + EDUCATIONAL PATHWAYS</h2>
                 <p>The Ella Rises Summit is a day camp packed with activities to give a glimpse of the Ella Rises Experience: art, STEM, and a focus on education! We conclude the day camp with a tour of a local university or technical college!</p>
-                <a href="/register" class="btn btn-primary" onclick="event.stopPropagation();">Enroll</a>
-                <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation();">Donate</a>
+                <a href="/register" class="btn btn-primary" onclick="event.stopPropagation();" aria-label="Enroll in Ella Rises Summit program">Enroll</a>
+                <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation();" aria-label="Donate to Ella Rises (opens in new window)">Donate</a>
             </div>
         </div>
-    </div>
-    <div class="program-card" onclick="window.location.href='/programs?program=3'">
-        <img src="/images/steam-workshop.jpg" alt="STEAM" class="program-card-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='none';">
+    </article>
+    <article class="program-card" role="listitem" tabindex="0" aria-label="STEAM Workshops program" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href='/programs?program=3';}">
+        <img src="/images/steam-workshop.jpg" alt="Students participating in STEAM workshop activities" class="program-card-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='none';">
         <div class="image-placeholder" style="display: none; height: 400px; margin: 0;">
             <div>STEAM Workshop Image</div>
         </div>
         <div class="program-card-content">
             <div class="program-card-overlay" onclick="event.stopPropagation();">
-                <h3>STEAM</h3>
+                <h2>STEAM</h2>
                 <p>We facilitate virtual and in-person STEAM (science, technology, engineering, art and math) workshops to develop and guide participant inquiry, discussion, and critical thinking of STEM related careers.</p>
-                <a href="/register" class="btn btn-primary" onclick="event.stopPropagation();">Enroll</a>
-                <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation();">Donate</a>
+                <a href="/register" class="btn btn-primary" onclick="event.stopPropagation();" aria-label="Enroll in STEAM Workshops program">Enroll</a>
+                <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation();" aria-label="Donate to Ella Rises (opens in new window)">Donate</a>
             </div>
         </div>
-    </div>
+    </article>
 </div>
 
 <!-- Events Section -->
-<section id="events" class="events-section" style="background: white; padding: 4rem 2rem; margin-top: 4rem;">
+<section id="events" class="events-section" style="background: white; padding: 4rem 2rem; margin-top: 4rem;" aria-labelledby="events-heading">
     <div style="max-width: 1200px; margin: 0 auto;">
-        <h2 style="text-align: center; font-size: 2rem; margin-bottom: 3rem; color: var(--text-dark); font-weight: 400; letter-spacing: 0.1em;">UPCOMING EVENTS</h2>
+        <h2 id="events-heading" style="text-align: center; font-size: 2rem; margin-bottom: 3rem; color: var(--text-dark); font-weight: 400; letter-spacing: 0.1em;">UPCOMING EVENTS</h2>
         
         <% if (typeof events !== 'undefined' && events.length > 0) { %>
-            <div class="events-container" style="display: flex; flex-direction: column; gap: 2rem; align-items: center;">
+            <div class="events-container" style="display: flex; flex-direction: column; gap: 2rem; align-items: center;" role="list">
                 <% events.forEach(function(event) { %>
-                    <div class="event-card" style="width: 100%; max-width: 600px; border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; background: white; position: relative;">
+                    <article class="event-card" style="width: 100%; max-width: 600px; border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; background: white; position: relative;" role="listitem">
                         <div style="position: absolute; top: 1.5rem; left: 1.5rem;">
-                            <span style="border: 1px solid #333; padding: 0.25rem 0.75rem; font-size: 0.75rem; color: #666; display: inline-block;">Multiple Dates</span>
+                            <span style="border: 1px solid #333; padding: 0.25rem 0.75rem; font-size: 0.75rem; color: #666; display: inline-block;" aria-label="Event occurs on multiple dates">Multiple Dates</span>
                         </div>
                         <div style="margin-top: 2rem;">
                             <h3 style="font-size: 1.5rem; font-weight: 600; color: var(--text-dark); margin-bottom: 1rem; margin-top: 0.5rem;"><%= event.event_name %></h3>
@@ -132,14 +135,14 @@
                                 <a href="#" style="color: #999; font-size: 0.85rem; text-decoration: underline; display: inline-block; margin-bottom: 1rem;">More info</a>
                             <% } %>
                             <div style="text-align: center; margin-top: 1.5rem;">
-                                <a href="/register" class="btn-rsvp" style="background: #000; color: white; padding: 0.75rem 2rem; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 500; transition: background 0.3s;">RSVP</a>
+                                <a href="/register" class="btn-rsvp" style="background: #000; color: white; padding: 0.75rem 2rem; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 500; transition: background 0.3s;" aria-label="RSVP for <%= event.event_name %>">RSVP</a>
                             </div>
                         </div>
-                    </div>
+                    </article>
                 <% }); %>
             </div>
         <% } else { %>
-            <div style="text-align: center; padding: 3rem 0;">
+            <div style="text-align: center; padding: 3rem 0;" role="status" aria-live="polite">
                 <p style="color: #999; font-size: 1.1rem;">No upcoming events at this time. Check back soon!</p>
             </div>
         <% } %>

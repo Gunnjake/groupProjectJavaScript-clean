@@ -1,10 +1,12 @@
 <%- include('../partials/header', { title: 'Register - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
 
+<!-- Registration page header -->
 <div class="page-header">
     <h1><%= typeof user !== 'undefined' && user ? 'REGISTER FOR ANOTHER PROGRAM' : 'REGISTER FOR A PROGRAM' %></h1>
     <p><%= typeof user !== 'undefined' && user ? `Welcome back, ${user.username}! Register for additional programs.` : 'Join us in empowering the future generation of women' %></p>
 </div>
 
+<!-- Show current registrations if logged in -->
 <% if (typeof user !== 'undefined' && user) { %>
     <div class="form-container" style="margin-bottom: 2rem;">
         <div class="form-card">
@@ -16,69 +18,73 @@
     </div>
 <% } %>
 
+<!-- Registration form -->
 <div class="form-container">
     <div class="form-card">
-        <form action="/register" method="POST" id="registration-form">
-            <!-- Participant Information Section -->
-            <div class="form-section">
-                <h3 class="section-header">Participant Information</h3>
+        <form action="/register" method="POST" id="registration-form" novalidate aria-label="Program Registration Form">
+            <!-- Personal info section -->
+            <fieldset class="form-section">
+                <legend class="section-header">Participant Information</legend>
                 <div class="form-row">
                     <div class="form-group form-group-half">
-                        <label for="firstName">First Name *</label>
-                        <input type="text" id="firstName" name="firstName" value="<%= typeof user !== 'undefined' && user ? user.firstName || '' : '' %>" required>
+                        <label for="firstName">First Name <span aria-label="required">*</span></label>
+                        <input type="text" id="firstName" name="firstName" value="<%= typeof user !== 'undefined' && user ? user.firstName || '' : '' %>" required aria-required="true" autocomplete="given-name">
                     </div>
                     <div class="form-group form-group-half">
-                        <label for="lastName">Last Name *</label>
-                        <input type="text" id="lastName" name="lastName" value="<%= typeof user !== 'undefined' && user ? user.lastName || '' : '' %>" required>
+                        <label for="lastName">Last Name <span aria-label="required">*</span></label>
+                        <input type="text" id="lastName" name="lastName" value="<%= typeof user !== 'undefined' && user ? user.lastName || '' : '' %>" required aria-required="true" autocomplete="family-name">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group form-group-half">
-                        <label for="email">Email Address *</label>
-                        <input type="email" id="email" name="email" value="<%= typeof user !== 'undefined' && user ? user.email || '' : '' %>" <%= typeof user !== 'undefined' && user ? 'readonly' : 'required' %>>
+                        <label for="email">Email Address <span aria-label="required">*</span></label>
+                        <input type="email" id="email" name="email" value="<%= typeof user !== 'undefined' && user ? user.email || '' : '' %>" <%= typeof user !== 'undefined' && user ? 'readonly aria-readonly="true"' : 'required aria-required="true"' %> autocomplete="email">
                     </div>
                     <div class="form-group form-group-half">
-                        <label for="phone">Phone Number *</label>
-                        <input type="tel" id="phone" name="phone" value="<%= typeof user !== 'undefined' && user ? user.phone || '' : '' %>" required>
+                        <label for="phone">Phone Number <span aria-label="required">*</span></label>
+                        <input type="tel" id="phone" name="phone" value="<%= typeof user !== 'undefined' && user ? user.phone || '' : '' %>" required aria-required="true" autocomplete="tel">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group form-group-half">
-                        <label for="age">Age *</label>
-                        <input type="number" id="age" name="age" min="11" max="18" value="<%= typeof user !== 'undefined' && user ? user.age || '' : '' %>" required>
+                        <label for="age">Age <span aria-label="required">*</span></label>
+                        <input type="number" id="age" name="age" min="11" max="18" value="<%= typeof user !== 'undefined' && user ? user.age || '' : '' %>" required aria-required="true" aria-describedby="age-hint">
+                        <small id="age-hint" class="field-hint">Must be between 11 and 18</small>
                     </div>
                     <div class="form-group form-group-half">
                         <label for="school">School or Employer</label>
-                        <input type="text" id="school" name="school" value="<%= typeof user !== 'undefined' && user ? user.school || '' : '' %>">
+                        <input type="text" id="school" name="school" value="<%= typeof user !== 'undefined' && user ? user.school || '' : '' %>" autocomplete="organization">
                     </div>
                 </div>
-            </div>
+            </fieldset>
 
             <!-- Location Information Section -->
-            <div class="form-section">
-                <h3 class="section-header">Location Information</h3>
+            <fieldset class="form-section">
+                <legend class="section-header">Location Information</legend>
                 <div class="form-row location-row">
                     <div class="form-group form-group-half">
                         <label for="city">City</label>
-                        <input type="text" id="city" name="city" value="<%= typeof user !== 'undefined' && user ? user.city || '' : '' %>">
+                        <input type="text" id="city" name="city" value="<%= typeof user !== 'undefined' && user ? user.city || '' : '' %>" autocomplete="address-level2">
                     </div>
                     <div class="form-group form-group-quarter">
                         <label for="state">State</label>
-                        <input type="text" id="state" name="state" maxlength="2" placeholder="UT" value="<%= typeof user !== 'undefined' && user ? user.state || '' : '' %>">
+                        <input type="text" id="state" name="state" maxlength="2" placeholder="UT" value="<%= typeof user !== 'undefined' && user ? user.state || '' : '' %>" autocomplete="address-level1" aria-describedby="state-hint">
+                        <small id="state-hint" class="field-hint">Two-letter code</small>
                     </div>
                     <div class="form-group form-group-quarter">
                         <label for="zip">Zip Code</label>
-                        <input type="text" id="zip" name="zip" pattern="[0-9]{5}" value="<%= typeof user !== 'undefined' && user ? user.zip || '' : '' %>">
+                        <input type="text" id="zip" name="zip" pattern="[0-9]{5}" value="<%= typeof user !== 'undefined' && user ? user.zip || '' : '' %>" autocomplete="postal-code" aria-describedby="zip-hint">
+                        <small id="zip-hint" class="field-hint">5 digits</small>
                     </div>
                 </div>
-            </div>
+            </fieldset>
 
             <!-- Program Selection Section -->
-            <div class="form-section">
-                <h3 class="section-header">Program Selection</h3>
+            <fieldset class="form-section">
+                <legend class="section-header">Program Selection</legend>
                 <div class="form-group">
-                    <label for="program">Program Interest *</label>
-                    <select id="program" name="program" required>
+                    <label for="program">Program Interest <span aria-label="required">*</span></label>
+                    <select id="program" name="program" required aria-required="true">
                         <option value="">Select a program</option>
                         <option value="Ballet Folklorico">Ballet Folklorico</option>
                         <option value="Mariachi">Mariachi</option>
@@ -86,29 +92,30 @@
                         <option value="Summit + Educational Pathways">Summit + Educational Pathways</option>
                     </select>
                 </div>
-            </div>
+            </fieldset>
 
             <!-- Account Creation Section (only if not logged in) -->
             <% if (typeof user === 'undefined' || !user) { %>
-                <div class="form-section">
-                    <h3 class="section-header">Create Account</h3>
+                <fieldset class="form-section">
+                    <legend class="section-header">Create Account</legend>
                     <div class="form-row">
-                        <div class="form-group form-group-half">
-                            <label for="password">Create Password *</label>
-                            <input type="password" id="password" name="password" required minlength="6">
-                            <small style="color: var(--text-secondary); font-size: 0.85rem;">Minimum 6 characters</small>
-                        </div>
-                        <div class="form-group form-group-half">
-                            <label for="confirmPassword">Confirm Password *</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
-                        </div>
+                    <div class="form-group form-group-half">
+                        <label for="password">Create Password <span aria-label="required">*</span></label>
+                        <input type="password" id="password" name="password" required minlength="8" aria-describedby="password-hint" aria-required="true" autocomplete="new-password">
+                        <small id="password-hint" class="field-hint">Minimum 8 characters</small>
                     </div>
-                </div>
+                    <div class="form-group form-group-half">
+                        <label for="confirmPassword">Confirm Password <span aria-label="required">*</span></label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" aria-describedby="confirm-password-hint" aria-required="true" autocomplete="new-password">
+                        <small id="confirm-password-hint" class="field-hint">Re-enter your password</small>
+                    </div>
+                    </div>
+                </fieldset>
             <% } %>
 
             <!-- Submit Button -->
             <div class="form-section">
-                <button type="submit" class="btn btn-primary btn-submit"><%= typeof user !== 'undefined' && user ? 'Register for Program' : 'Create Account & Register' %></button>
+                <button type="submit" class="btn btn-primary btn-submit" aria-label="<%= typeof user !== 'undefined' && user ? 'Register for selected program' : 'Create account and register for program' %>"><%= typeof user !== 'undefined' && user ? 'Register for Program' : 'Create Account & Register' %></button>
                 <% if (typeof user === 'undefined' || !user) { %>
                     <div style="text-align: center; margin-top: 1rem;">
                         <p style="color: var(--text-secondary); font-size: 0.9rem;">Already have an account? <a href="/login" style="color: var(--coral);">Login here</a></p>

@@ -1,42 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta tags for SEO and social sharing -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="<%= typeof description !== 'undefined' ? description : 'Ella Rises empowers the future generation of women through STEAM programs and cultural heritage including Ballet Folklorico, Mariachi, and educational workshops.' %>">
+    <meta name="keywords" content="Ella Rises, STEAM education, Ballet Folklorico, Mariachi, women empowerment, cultural heritage, youth programs">
+    <meta name="author" content="Ella Rises">
+    <meta property="og:title" content="<%= typeof title !== 'undefined' ? title : 'Ella Rises' %>">
+    <meta property="og:description" content="<%= typeof description !== 'undefined' ? description : 'Empowering the future generation of women through STEAM programs and cultural heritage.' %>">
+    <meta property="og:type" content="website">
     <title><%= typeof title !== 'undefined' ? title : 'Ella Rises' %></title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="/images/ella-rises-heart.jpg">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Styles -->
+    <!-- Main stylesheet -->
     <link rel="stylesheet" href="/css/style.css">
     
-    <!-- Chart.js for future dashboard use -->
+    <!-- Chart.js for dashboard charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- Navigation Header -->
-    <header class="main-header">
-        <nav class="navbar">
+    <!-- Skip link for accessibility -->
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    
+    <!-- Main navigation header -->
+    <header class="main-header" role="banner">
+        <nav class="navbar" role="navigation" aria-label="Main navigation">
             <div class="nav-container">
+                <!-- Logo -->
                 <div class="nav-logo">
-                    <a href="/">
+                    <a href="/" aria-label="Ella Rises Home">
                         <img src="/images/ella-rises-logo-white.png" alt="Ella Rises Logo" class="logo-img" onerror="this.onerror=null; this.src='/images/ella-rises-logo-pink.png';">
-                        <div class="logo-placeholder" style="display: none;">ER</div>
+                        <span class="sr-only">Ella Rises Home</span>
                     </a>
                 </div>
                 
+                <!-- Navigation menu -->
                 <ul class="nav-menu">
-                    <!-- Public navigation (visible to everyone) -->
+                    <!-- Public links visible to everyone -->
                     <li><a href="/" class="nav-link">Home</a></li>
                     <li><a href="/about" class="nav-link">About Us</a></li>
                     <li><a href="/programs" class="nav-link">Programs</a></li>
                     <li><a href="/#events" class="nav-link">Events</a></li>
                     <li><a href="/register" class="nav-link">Register</a></li>
                     <li><a href="/contact" class="nav-link">Contact Us</a></li>
-                    <li><a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="nav-link donate-btn">Donate</a></li>
+                    <li><a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="nav-link donate-btn" aria-label="Donate to Ella Rises (opens in new window)">Donate</a></li>
                     <% if (typeof user !== 'undefined' && user) { %>
                         <li><a href="/logout" class="nav-link">Logout</a></li>
                     <% } else { %>
@@ -47,14 +62,15 @@
         </nav>
     </header>
 
-    <!-- Secondary Admin Navigation (only visible when logged in) -->
+    <!-- Admin nav bar - shows when logged in -->
     <% if (typeof user !== 'undefined' && user) { %>
-        <header class="admin-header">
-            <nav class="admin-navbar">
+        <header class="admin-header" role="banner">
+            <nav class="admin-navbar" role="navigation" aria-label="Admin navigation">
                 <div class="admin-nav-container">
                     <ul class="admin-nav-menu">
                         <li><a href="/dashboard" class="admin-nav-link">Dashboard</a></li>
                         <li><a href="/events" class="admin-nav-link">Events</a></li>
+                        <!-- Manager-only links -->
                         <% if (user.role === 'manager') { %>
                             <li><a href="/participants" class="admin-nav-link">Participants</a></li>
                             <li><a href="/surveys" class="admin-nav-link">Surveys</a></li>
@@ -62,6 +78,7 @@
                             <li><a href="/donations" class="admin-nav-link">Donations</a></li>
                             <li><a href="/users" class="admin-nav-link">User Maintenance</a></li>
                         <% } else { %>
+                            <!-- Regular user links -->
                             <li><a href="/my-surveys" class="admin-nav-link">My Surveys</a></li>
                         <% } %>
                     </ul>
@@ -70,17 +87,17 @@
         </header>
     <% } %>
 
-    <!-- Flash messages -->
+    <!-- Flash messages for success/error notifications -->
     <% if (typeof messages !== 'undefined' && messages) { %>
-        <div class="flash-messages">
+        <div class="flash-messages" role="region" aria-live="polite" aria-atomic="true">
             <% messages.forEach(function(message) { %>
-                <div class="flash-message flash-<%= message.type %>">
+                <div class="flash-message flash-<%= message.type %>" role="alert">
                     <%= message.text %>
                 </div>
             <% }); %>
         </div>
     <% } %>
 
-    <!-- Main Content -->
-    <main class="main-content">
+    <!-- Main page content -->
+    <main id="main-content" class="main-content">
 

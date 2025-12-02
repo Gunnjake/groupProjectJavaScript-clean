@@ -6,43 +6,52 @@
 </div>
 
 <div class="search-container">
-    <input type="text" id="search-input" class="search-input" placeholder="Search surveys by participant, event, or satisfaction score...">
-    <a href="/surveys/new" class="btn btn-primary">Add New Survey</a>
+    <label for="search-input" class="sr-only">Search surveys</label>
+    <input type="text" id="search-input" class="search-input" placeholder="Search surveys by participant, event, or satisfaction score..." aria-label="Search surveys by participant, event, or satisfaction score">
+    <a href="/surveys/new" class="btn btn-primary" aria-label="Add new survey">Add New Survey</a>
 </div>
 
-<div class="table-container">
-    <table>
+<div class="table-container" role="region" aria-label="Surveys table">
+    <table aria-label="Surveys">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Participant</th>
-                <th>Event</th>
-                <th>Satisfaction</th>
-                <th>Usefulness</th>
-                <th>Recommendation</th>
-                <th>Date</th>
-                <th>Actions</th>
+                <th scope="col">ID</th>
+                <th scope="col">Participant</th>
+                <th scope="col">Event</th>
+                <th scope="col">Satisfaction</th>
+                <th scope="col">Usefulness</th>
+                <th scope="col">Recommendation</th>
+                <th scope="col">Date</th>
+                <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody id="surveys-table-body">
-            <!-- Surveys will be populated here when database is connected -->
+            <!-- Surveys populated from database -->
             <tr>
-                <td colspan="8" class="text-center">No surveys found. Add a survey to get started.</td>
+                <td colspan="8" class="text-center" role="status" aria-live="polite">No surveys found. Add a survey to get started.</td>
             </tr>
         </tbody>
     </table>
 </div>
 
 <script>
-    // Search functionality
+    // Search functionality with screen reader support
     document.getElementById('search-input').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
         const rows = document.querySelectorAll('#surveys-table-body tr');
+        let visibleCount = 0;
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
+            const isVisible = text.includes(searchTerm);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+        
+        const status = document.querySelector('#surveys-table-body [role="status"]');
+        if (status && visibleCount > 0) {
+            status.textContent = `${visibleCount} survey${visibleCount === 1 ? '' : 's'} found`;
+        }
     });
 </script>
 

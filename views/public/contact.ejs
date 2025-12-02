@@ -1,31 +1,34 @@
 <%- include('../partials/header', { title: 'Contact Us - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
 
+<!-- Contact page header -->
 <div class="page-header" style="margin-bottom: 3rem;">
     <h1>Contact Us</h1>
     <p>Get in touch with the Ella Rises team</p>
 </div>
 
+<!-- Two-column layout: form and contact info -->
 <div class="contact-container">
+    <!-- Contact form -->
     <div class="contact-form-wrapper">
-        <form action="/contact" method="POST" class="contact-form">
+        <form action="/contact" method="POST" class="contact-form" novalidate aria-label="Contact Form">
             <div class="form-group">
-                <label for="name">Name *</label>
-                <input type="text" id="name" name="name" required>
+                <label for="name">Name <span aria-label="required">*</span></label>
+                <input type="text" id="name" name="name" required aria-required="true" autocomplete="name">
             </div>
             <div class="form-group">
-                <label for="email">Email *</label>
-                <input type="email" id="email" name="email" required>
+                <label for="email">Email <span aria-label="required">*</span></label>
+                <input type="email" id="email" name="email" required aria-required="true" autocomplete="email">
             </div>
             <div class="form-group">
-                <label for="subject">Subject *</label>
-                <input type="text" id="subject" name="subject" required>
+                <label for="subject">Subject <span aria-label="required">*</span></label>
+                <input type="text" id="subject" name="subject" required aria-required="true">
             </div>
             <div class="form-group">
-                <label for="message">Message *</label>
-                <textarea id="message" name="message" rows="8" required></textarea>
+                <label for="message">Message <span aria-label="required">*</span></label>
+                <textarea id="message" name="message" rows="8" required aria-required="true"></textarea>
             </div>
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Send Message</button>
+                <button type="submit" class="btn btn-primary" aria-label="Send contact message">Send Message</button>
             </div>
         </form>
     </div>

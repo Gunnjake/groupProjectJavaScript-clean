@@ -1,46 +1,59 @@
 <%- include('../partials/header', { title: 'User Maintenance - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
 
+<!-- User maintenance page - manager only -->
 <div class="page-header">
     <h1>User Maintenance</h1>
     <p>Manage user accounts (Manager Only)</p>
 </div>
 
+<!-- Search and add button -->
 <div class="search-container">
-    <input type="text" id="search-input" class="search-input" placeholder="Search users by username, email, or role...">
-    <a href="/users/new" class="btn btn-primary">Add New User</a>
+    <label for="search-input" class="sr-only">Search users</label>
+    <input type="text" id="search-input" class="search-input" placeholder="Search users by username, email, or role..." aria-label="Search users by username, email, or role">
+    <a href="/users/new" class="btn btn-primary" aria-label="Add new user">Add New User</a>
 </div>
 
-<div class="table-container">
-    <table>
+<!-- Users table -->
+<div class="table-container" role="region" aria-label="Users table">
+    <table aria-label="Users">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Created</th>
-                <th>Actions</th>
+                <th scope="col">ID</th>
+                <th scope="col">Username</th>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Created</th>
+                <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody id="users-table-body">
-            <!-- Users will be populated here when database is connected -->
+            <!-- Users populated from database -->
             <tr>
-                <td colspan="6" class="text-center">No users found. Add a user to get started.</td>
+                <td colspan="6" class="text-center" role="status" aria-live="polite">No users found. Add a user to get started.</td>
             </tr>
         </tbody>
     </table>
 </div>
 
+<!-- Client-side search filter -->
 <script>
-    // Search functionality
     document.getElementById('search-input').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
         const rows = document.querySelectorAll('#users-table-body tr');
+        let visibleCount = 0;
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
+            const isVisible = text.includes(searchTerm);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+        
+        // Announce results to screen readers
+        const status = document.querySelector('#users-table-body [role="status"]');
+        if (status && visibleCount > 0) {
+            status.textContent = `${visibleCount} user${visibleCount === 1 ? '' : 's'} found`;
+        }
     });
 </script>
 

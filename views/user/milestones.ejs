@@ -6,40 +6,49 @@
 </div>
 
 <div class="search-container">
-    <input type="text" id="search-input" class="search-input" placeholder="Search milestones by name, type, or participant...">
+    <label for="search-input" class="sr-only">Search milestones</label>
+    <input type="text" id="search-input" class="search-input" placeholder="Search milestones by name, type, or participant..." aria-label="Search milestones by name, type, or participant">
 </div>
 
-<div class="table-container">
-    <table>
+<div class="table-container" role="region" aria-label="Milestones table">
+    <table aria-label="Milestones">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Milestone Name</th>
-                <th>Type</th>
-                <th>Participant</th>
-                <th>Achievement Date</th>
-                <th>Status</th>
+                <th scope="col">ID</th>
+                <th scope="col">Milestone Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Participant</th>
+                <th scope="col">Achievement Date</th>
+                <th scope="col">Status</th>
             </tr>
         </thead>
         <tbody id="milestones-table-body">
-            <!-- Milestones will be populated here when database is connected -->
+            <!-- Milestones populated from database -->
             <tr>
-                <td colspan="6" class="text-center">No milestones found.</td>
+                <td colspan="6" class="text-center" role="status" aria-live="polite">No milestones found.</td>
             </tr>
         </tbody>
     </table>
 </div>
 
 <script>
-    // Search functionality
+    // Search functionality with screen reader support
     document.getElementById('search-input').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
         const rows = document.querySelectorAll('#milestones-table-body tr');
+        let visibleCount = 0;
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
+            const isVisible = text.includes(searchTerm);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+        
+        const status = document.querySelector('#milestones-table-body [role="status"]');
+        if (status && visibleCount > 0) {
+            status.textContent = `${visibleCount} milestone${visibleCount === 1 ? '' : 's'} found`;
+        }
     });
 </script>
 

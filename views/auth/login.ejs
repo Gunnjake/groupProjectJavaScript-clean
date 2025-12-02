@@ -1,46 +1,50 @@
 <%- include('../partials/header', { title: 'Login - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
 
+<!-- Login page header -->
 <div class="page-header">
     <h1>Login</h1>
     <p>Access your Ella Rises account</p>
 </div>
 
 <div class="form-container">
+    <!-- Show error if login failed -->
     <% if (typeof error !== 'undefined' && error) { %>
         <div class="flash-message flash-error">
             <%= error %>
         </div>
     <% } %>
 
-    <form action="/login" method="POST">
+    <!-- Login form -->
+    <form action="/login" method="POST" aria-label="Login form">
         <div class="form-group">
-            <label for="username">Username *</label>
-            <input type="text" id="username" name="username" required autofocus>
+            <label for="username">Username <span aria-label="required">*</span></label>
+            <input type="text" id="username" name="username" required autofocus aria-required="true" autocomplete="username">
         </div>
         <div class="form-group">
-            <label for="password">Password *</label>
-            <input type="password" id="password" name="password" required>
+            <label for="password">Password <span aria-label="required">*</span></label>
+            <input type="password" id="password" name="password" required aria-required="true" autocomplete="current-password">
         </div>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Login</button>
-            <a href="/" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" aria-label="Submit login">Login</button>
+            <a href="/" class="btn btn-secondary" aria-label="Cancel and return to home">Cancel</a>
         </div>
     </form>
     
+    <!-- Link to registration -->
     <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light);">
         <p style="color: var(--text-secondary); font-size: 0.95rem;">Don't have an account? <a href="/register" style="color: var(--coral); font-weight: 600; text-decoration: none;">Register to create one</a></p>
     </div>
     
-    <!-- Test Login Buttons (for testing without database) -->
+    <!-- Test login buttons - bypasses DB for testing -->
     <div style="margin-top: 2rem; padding: 1.5rem; background-color: #fff3cd; border: 2px dashed #ffc107; border-radius: 8px;">
         <p style="text-align: center; margin-bottom: 1rem; font-weight: 600; color: #856404; font-size: 0.9rem;">
             🧪 TEST MODE - Quick Login (No Database Required)
         </p>
         <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-            <a href="/test-login/admin" class="btn" style="background-color: var(--coral); color: white; padding: 0.75rem 1.5rem; text-decoration: none; display: inline-block;">
+            <a href="/test-login/admin" class="btn" style="background-color: var(--coral); color: white; padding: 0.75rem 1.5rem; text-decoration: none; display: inline-block;" aria-label="Test login as administrator">
                 Login as Admin
             </a>
-            <a href="/test-login/customer" class="btn" style="background-color: var(--forest-green); color: white; padding: 0.75rem 1.5rem; text-decoration: none; display: inline-block;">
+            <a href="/test-login/customer" class="btn" style="background-color: var(--forest-green); color: white; padding: 0.75rem 1.5rem; text-decoration: none; display: inline-block;" aria-label="Test login as customer">
                 Login as Customer
             </a>
         </div>

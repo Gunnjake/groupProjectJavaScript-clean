@@ -1,10 +1,12 @@
 <%- include('../partials/header', { title: 'Events - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
 
+<!-- Events page - card-based UI for users -->
 <div class="page-header">
     <h1>Upcoming Events</h1>
     <p>Discover our upcoming programs and workshops</p>
 </div>
 
+<!-- Flash messages -->
 <% if (typeof messages !== 'undefined' && messages.length > 0) { %>
     <% messages.forEach(function(message) { %>
         <div class="flash-message flash-<%= message.type %>" style="max-width: 1200px; margin: 1rem auto; padding: 0 2rem;">
@@ -14,12 +16,15 @@
 <% } %>
 
 <div style="max-width: 1200px; margin: 2rem auto; padding: 0 2rem;">
+    <!-- Search bar -->
     <div style="margin-bottom: 2rem;">
         <input type="text" id="search-input" class="search-input" placeholder="Search events by name, type, or location..." style="width: 100%; max-width: 500px; margin: 0 auto; display: block;">
     </div>
 
+    <!-- Events grid -->
     <% if (typeof events !== 'undefined' && events.length > 0) { %>
         <div class="events-grid" id="events-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem;">
+            <!-- Event cards -->
             <% events.forEach(function(event) { %>
                 <div class="event-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'">
                     <div style="background: linear-gradient(135deg, var(--coral), var(--accent-peach)); padding: 1.5rem; color: white;">

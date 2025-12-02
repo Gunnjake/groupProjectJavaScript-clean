@@ -8,12 +8,14 @@
     /* Color Palette */
     --pink-bg: #F9D9D2;
     --accent-peach: #F4C4B5;
-    --coral: #E88375;
+    --coral: #D65A47; /* Darker coral for better contrast (was #E88375) */
+    --coral-light: #E88375; /* Original coral for backgrounds */
     --lavender: #C6B8E9;
     --forest-green: #324F41;
     --sage: #A7C4A0;
     --gold: #E4C26E;
     --text-dark: #1A1A1A;
+    --text-dark-alt: #0D0D0D; /* Even darker for better contrast on light backgrounds */
     --white: #FFFFFF;
     
     /* Button Styles */
@@ -188,7 +190,7 @@ body {
 }
 
 .nav-link:hover {
-    color: var(--coral);
+    color: var(--coral-light);
 }
 
 .donate-btn {
@@ -201,14 +203,14 @@ body {
 }
 
 .donate-btn:hover {
-    background-color: var(--coral);
+    background-color: var(--coral-light);
     color: var(--white) !important;
     transform: translateY(-2px);
 }
 
 /* Secondary Admin Navigation */
 .admin-header {
-    background-color: var(--coral);
+    background-color: var(--coral-light);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 0;
@@ -310,6 +312,11 @@ body {
     padding: 2rem;
 }
 
+/* Remove top padding when hero section is first child */
+.main-content > .hero-section-pink:first-child {
+    margin-top: -2rem;
+}
+
 /* Full-width sections - Matching Wix layout */
 .section-full {
     width: 100vw;
@@ -324,7 +331,7 @@ body {
 }
 
 .section-full.orange-bg {
-    background: linear-gradient(135deg, var(--coral), var(--accent-peach));
+    background: linear-gradient(135deg, var(--coral-light), var(--accent-peach));
     color: var(--white);
     position: relative;
 }
@@ -336,7 +343,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(232, 131, 117, 0.95), rgba(244, 196, 181, 0.95));
+    background: linear-gradient(135deg, rgba(214, 90, 71, 0.95), rgba(244, 196, 181, 0.95));
     z-index: 0;
     pointer-events: none;
 }
@@ -468,11 +475,12 @@ html {
 
 /* Forms */
 .form-container {
-    background-color: var(--light-gray);
+    background-color: var(--white);
     padding: 2rem;
     border-radius: 8px;
     max-width: 600px;
     margin: 2rem auto;
+    box-shadow: var(--card-shadow);
 }
 
 .form-group {
@@ -482,7 +490,7 @@ html {
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: var(--text-dark);
+    color: var(--text-dark-alt);
     font-weight: 500;
 }
 
@@ -501,8 +509,8 @@ html {
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: var(--coral);
-    box-shadow: 0 0 0 3px rgba(232, 131, 117, 0.1);
+    border-color: var(--coral-light);
+    box-shadow: 0 0 0 3px rgba(214, 90, 71, 0.15);
 }
 
 .form-group textarea {
@@ -531,7 +539,7 @@ table {
 }
 
 thead {
-    background-color: var(--coral);
+    background-color: var(--coral-light);
     color: var(--white);
 }
 
@@ -587,7 +595,7 @@ tbody tr:last-child td {
 }
 
 .card-header {
-    color: var(--coral);
+    color: var(--coral-light);
     font-family: var(--font-header), serif;
     font-size: 1.5rem;
     margin-bottom: 1rem;
@@ -597,7 +605,7 @@ tbody tr:last-child td {
 
 /* Landing Page Styles - Matching Ella Rises design */
 .hero-section {
-    background: linear-gradient(135deg, var(--coral) 0%, var(--accent-peach) 100%);
+    background: linear-gradient(135deg, var(--coral-light) 0%, var(--accent-peach) 100%);
     color: var(--white);
     padding: 5rem 2rem;
     text-align: center;
@@ -646,6 +654,7 @@ tbody tr:last-child td {
     text-align: center;
     width: 100vw;
     margin: 0;
+    margin-top: 0;
     margin-bottom: 0;
     position: relative;
     left: 50%;
@@ -664,7 +673,7 @@ tbody tr:last-child td {
     font-family: var(--font-header), serif;
     font-size: 3rem;
     font-weight: 700;
-    color: var(--text-dark);
+    color: var(--text-dark-alt);
     margin-bottom: var(--space-lg);
     letter-spacing: -0.02em;
 }
@@ -679,8 +688,8 @@ tbody tr:last-child td {
 }
 
 .circle-image-wrapper {
-    width: 180px;
-    height: 180px;
+    width: 220px;
+    height: 220px;
     border-radius: 50%;
     overflow: hidden;
     position: relative;
@@ -690,8 +699,8 @@ tbody tr:last-child td {
 }
 
 .circle-image-wrapper.logo-center {
-    width: 350px;
-    height: 350px;
+    width: 420px;
+    height: 420px;
     z-index: 1;
     background-color: transparent;
     box-shadow: none;
@@ -715,7 +724,7 @@ tbody tr:last-child td {
 .hero-description {
     font-family: var(--font-body), Arial, Helvetica, sans-serif;
     font-size: 1.2rem;
-    color: var(--text-dark);
+    color: var(--text-dark-alt);
     width: 100%;
     margin: var(--space-xl) auto 0;
     padding: 0 var(--space-md);
@@ -1025,7 +1034,7 @@ footer.main-footer * {
 
 footer.main-footer h3,
 footer.main-footer h4 {
-    color: var(--coral) !important;
+    color: var(--coral-light) !important;
 }
 
 .footer-logo {
@@ -1053,7 +1062,7 @@ footer.main-footer h4 {
 .footer-section h4 {
     font-family: var(--font-header), serif;
     margin-bottom: 1rem;
-    color: var(--coral);
+    color: var(--coral-light);
 }
 
 .footer-section ul {
@@ -1278,6 +1287,271 @@ footer.main-footer h4 {
     color: #bbb;
     position: relative;
     z-index: 1;
+}
+
+/* Skip to Content Link - Accessibility */
+.skip-to-content {
+    position: absolute;
+    top: -100px;
+    left: -9999px;
+    background: var(--coral-light);
+    color: var(--white);
+    padding: 8px 16px;
+    text-decoration: none;
+    z-index: 10000;
+    font-weight: 600;
+    border-radius: 0 0 4px 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.skip-to-content:focus {
+    top: 0;
+    left: 0;
+    opacity: 1;
+    pointer-events: auto;
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+}
+
+/* Loading States */
+.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 3px solid var(--coral-light);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid var(--white);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+/* Form Validation Styles */
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.form-group.error input,
+.form-group.error select,
+.form-group.error textarea {
+    border-color: var(--error-red);
+    box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+}
+
+.form-group.success input,
+.form-group.success select,
+.form-group.success textarea {
+    border-color: var(--success-green);
+}
+
+.error-message {
+    color: var(--error-red);
+    font-size: 0.875rem;
+    margin-top: var(--space-xs);
+    display: block;
+}
+
+.success-message {
+    color: var(--success-green);
+    font-size: 0.875rem;
+    margin-top: var(--space-xs);
+    display: block;
+}
+
+.field-hint {
+    color: var(--medium-gray);
+    font-size: 0.875rem;
+    margin-top: var(--space-xs);
+    display: block;
+}
+
+/* Accessibility Improvements - Only show focus outline for keyboard navigation */
+*:focus-visible {
+    outline: 3px solid var(--coral-light);
+    outline-offset: 2px;
+    z-index: 9999; /* Ensure outline appears on top */
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid var(--coral-light);
+    outline-offset: 2px;
+    z-index: 9999;
+}
+
+/* Fieldset and legend styling */
+fieldset {
+    border: 2px solid var(--border-light);
+    border-radius: 8px;
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+legend {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    padding: 0 var(--space-md);
+}
+
+/* Screen Reader Only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Ensure sufficient color contrast */
+.btn-primary {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    /* Contrast ratio meets WCAG AA (4.5:1) */
+}
+
+/* Keyboard navigation - ensure all interactive elements are focusable */
+.program-card:focus-visible {
+    outline: 3px solid var(--coral-light);
+    outline-offset: 4px;
+    z-index: 9999;
+}
+
+/* Remove outline for mouse users, keep for keyboard */
+.js-focus-visible *:focus:not(.focus-visible) {
+    outline: none;
+}
+
+/* Ensure buttons are keyboard accessible */
+button[type="button"],
+button[type="submit"] {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Print Styles */
+@media print {
+    /* Hide navigation and non-essential elements */
+    .main-header,
+    .admin-header,
+    .skip-to-content,
+    .btn,
+    button,
+    nav,
+    .footer,
+    .main-footer,
+    .flash-messages {
+        display: none !important;
+    }
+
+    /* Ensure content is visible */
+    body {
+        background: white;
+        color: black;
+        font-size: 12pt;
+        line-height: 1.5;
+    }
+
+    .main-content {
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+    }
+
+    /* Page breaks */
+    .page-break {
+        page-break-before: always;
+    }
+
+    /* Links */
+    a {
+        color: black;
+        text-decoration: underline;
+    }
+
+    a[href^="http"]:after {
+        content: " (" attr(href) ")";
+        font-size: 10pt;
+        color: #666;
+    }
+
+    /* Images */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Cards and sections */
+    .card,
+    .section {
+        border: 1px solid #ddd;
+        page-break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+
+    /* Headings */
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+        color: black;
+    }
+
+    /* Tables */
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
 }
 
 

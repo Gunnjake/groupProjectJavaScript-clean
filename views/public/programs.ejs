@@ -1,12 +1,16 @@
 <%- include('../partials/header', { title: 'Programs - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
 
+<!-- Programs page header -->
 <div class="page-header" style="margin-bottom: 1rem;">
     <h1 style="font-size: 2rem; margin-bottom: 0.25rem;">PROGRAMS</h1>
 </div>
 
+<!-- Program carousel - shows one program at a time -->
 <div class="program-carousel-container">
     <% 
+    // Get program index from query param
     const currentIndex = programIndex || 0;
+    // Program data array
     const programs = [
             {
                 title: 'BALLET FOLKLORICO',
@@ -54,46 +58,51 @@
     const nextIndex = currentIndex === programs.length - 1 ? 0 : currentIndex + 1;
     %>
     
+    <!-- Carousel navigation - previous button -->
     <div class="program-carousel-nav program-carousel-nav-left">
-        <button class="carousel-arrow carousel-arrow-left" onclick="window.location.href='/programs?program=<%= prevIndex %>'" aria-label="Previous program">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="carousel-arrow carousel-arrow-left" onclick="window.location.href='/programs?program=<%= prevIndex %>'" aria-label="Previous program: <%= programs[prevIndex].title %>" type="button">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M15 18l-6-6 6-6"/>
             </svg>
+            <span class="sr-only">Previous program</span>
         </button>
     </div>
     
-    <div class="program-carousel">
-        <div class="program-featured">
+    <!-- Program carousel content -->
+    <div class="program-carousel" role="region" aria-label="Program information" aria-live="polite">
+        <article class="program-featured">
             <div class="program-featured-image">
-                <img src="<%= currentProgram.image %>" alt="<%= currentProgram.title %>" onerror="this.onerror=null; this.src='<%= currentProgram.fallbackImage %>';">
+                <img src="<%= currentProgram.image %>" alt="<%= currentProgram.title %> program participants" onerror="this.onerror=null; this.src='<%= currentProgram.fallbackImage %>';">
             </div>
             <div class="program-featured-content">
                 <h2><%= currentProgram.title %></h2>
                 <p><%= currentProgram.description %></p>
                 <% if (currentProgram.details && currentProgram.details.length > 0) { %>
-                    <ul class="program-details-list">
+                    <ul class="program-details-list" role="list">
                         <% currentProgram.details.forEach(detail => { %>
-                            <li><%= detail %></li>
+                            <li role="listitem"><%= detail %></li>
                         <% }); %>
                     </ul>
                 <% } %>
                 <div class="program-featured-buttons">
                     <% if (currentProgram.hasEnroll) { %>
-                        <a href="/register" class="btn btn-primary">Enroll</a>
+                        <a href="/register" class="btn btn-primary" aria-label="Enroll in <%= currentProgram.title %> program">Enroll</a>
                     <% } %>
                     <% if (currentProgram.hasDonate) { %>
-                        <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="<%= currentProgram.hasEnroll ? 'margin-left: 0.5rem;' : '' %>">Donate</a>
+                        <a href="https://givebutter.com/EllaRises" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="<%= currentProgram.hasEnroll ? 'margin-left: 0.5rem;' : '' %>" aria-label="Donate to Ella Rises (opens in new window)">Donate</a>
                     <% } %>
                 </div>
             </div>
-        </div>
+        </article>
     </div>
     
+    <!-- Carousel navigation - next button -->
     <div class="program-carousel-nav program-carousel-nav-right">
-        <button class="carousel-arrow carousel-arrow-right" onclick="window.location.href='/programs?program=<%= nextIndex %>'" aria-label="Next program">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="carousel-arrow carousel-arrow-right" onclick="window.location.href='/programs?program=<%= nextIndex %>'" aria-label="Next program: <%= programs[nextIndex].title %>" type="button">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M9 18l6-6-6-6"/>
             </svg>
+            <span class="sr-only">Next program</span>
         </button>
     </div>
     

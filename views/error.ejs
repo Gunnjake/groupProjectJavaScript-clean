@@ -1,11 +1,13 @@
 <%- include('partials/header', { title: typeof title !== 'undefined' ? title : 'Error - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
 
+<!-- Generic error page -->
 <div class="page-header">
     <h1><%= typeof title !== 'undefined' ? title : 'Error' %></h1>
 </div>
 
 <div class="card">
     <p><%= typeof message !== 'undefined' ? message : 'An error occurred.' %></p>
+    <!-- Navigation buttons -->
     <div style="margin-top: 2rem;">
         <a href="/" class="btn btn-primary">Return Home</a>
         <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>

@@ -1,0 +1,143 @@
+<%- include('../partials/header', { title: '404 - Page Not Found', user: typeof user !== 'undefined' ? user : null }) %>
+
+<!-- 404 error page -->
+<div class="error-page">
+    <div class="error-container">
+        <div class="error-content">
+            <h1 class="error-code">404</h1>
+            <h2 class="error-title">Page Not Found</h2>
+            <p class="error-message">
+                Oops! The page you're looking for doesn't exist. It might have been moved, deleted, or the URL might be incorrect.
+            </p>
+            <!-- Navigation buttons -->
+            <div class="error-actions">
+                <a href="/" class="btn btn-primary">Go to Homepage</a>
+                <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+            </div>
+            <!-- Quick links to common pages -->
+            <div class="error-helpful-links">
+                <h3>Helpful Links</h3>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/programs">Programs</a></li>
+                    <li><a href="/contact">Contact Us</a></li>
+                    <li><a href="/register">Register</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xl) var(--space-md);
+    background: linear-gradient(135deg, var(--pink-bg) 0%, var(--white) 100%);
+}
+
+.error-container {
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+}
+
+.error-content {
+    background: var(--white);
+    padding: var(--space-xl);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+}
+
+.error-code {
+    font-size: 8rem;
+    font-weight: 700;
+    color: var(--coral);
+    margin: 0;
+    line-height: 1;
+    font-family: var(--font-header);
+}
+
+.error-title {
+    font-size: 2rem;
+    color: var(--text-dark);
+    margin: var(--space-md) 0;
+    font-family: var(--font-header);
+}
+
+.error-message {
+    font-size: 1.1rem;
+    color: var(--medium-gray);
+    margin-bottom: var(--space-xl);
+    line-height: 1.6;
+}
+
+.error-actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: center;
+    margin-bottom: var(--space-xl);
+    flex-wrap: wrap;
+}
+
+.error-helpful-links {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--border-light);
+}
+
+.error-helpful-links h3 {
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    margin-bottom: var(--space-md);
+    font-family: var(--font-header);
+}
+
+.error-helpful-links ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    justify-content: center;
+}
+
+.error-helpful-links li {
+    margin: 0;
+}
+
+.error-helpful-links a {
+    color: var(--coral);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.error-helpful-links a:hover {
+    color: var(--forest-green);
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .error-code {
+        font-size: 5rem;
+    }
+
+    .error-title {
+        font-size: 1.5rem;
+    }
+
+    .error-actions {
+        flex-direction: column;
+    }
+
+    .error-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<%- include('../partials/footer') %>
+

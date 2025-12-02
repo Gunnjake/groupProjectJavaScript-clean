@@ -6,42 +6,52 @@
 </div>
 
 <div class="search-container">
-    <input type="text" id="search-input" class="search-input" placeholder="Search participants by name, email, or program...">
-    <a href="/participants/new" class="btn btn-primary">Add New Participant</a>
+    <label for="search-input" class="sr-only">Search participants</label>
+    <input type="text" id="search-input" class="search-input" placeholder="Search participants by name, email, or program..." aria-label="Search participants by name, email, or program">
+    <a href="/participants/new" class="btn btn-primary" aria-label="Add new participant">Add New Participant</a>
 </div>
 
-<div class="table-container">
-    <table>
+<div class="table-container" role="region" aria-label="Participants table">
+    <table aria-label="Participants">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Program</th>
-                <th>Enrollment Date</th>
-                <th>Actions</th>
+                <th scope="col">ID</th>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Phone</th>
+                <th scope="col">Program</th>
+                <th scope="col">Enrollment Date</th>
+                <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody id="participants-table-body">
-            <!-- Participants will be populated here when database is connected -->
+            <!-- Participants populated from database -->
             <tr>
-                <td colspan="7" class="text-center">No participants found. Add a participant to get started.</td>
+                <td colspan="7" class="text-center" role="status" aria-live="polite">No participants found. Add a participant to get started.</td>
             </tr>
         </tbody>
     </table>
 </div>
 
 <script>
-    // Search functionality
+    // Search functionality with screen reader announcements
     document.getElementById('search-input').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
         const rows = document.querySelectorAll('#participants-table-body tr');
+        let visibleCount = 0;
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
+            const isVisible = text.includes(searchTerm);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+        
+        // Announce results
+        const status = document.querySelector('#participants-table-body [role="status"]');
+        if (status && visibleCount > 0) {
+            status.textContent = `${visibleCount} participant${visibleCount === 1 ? '' : 's'} found`;
+        }
     });
 </script>
 

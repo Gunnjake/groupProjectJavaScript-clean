@@ -6,42 +6,51 @@
 </div>
 
 <div class="search-container">
-    <input type="text" id="search-input" class="search-input" placeholder="Search events by name, type, or location...">
-    <a href="/events/new" class="btn btn-primary">Add New Event</a>
+    <label for="search-input" class="sr-only">Search events</label>
+    <input type="text" id="search-input" class="search-input" placeholder="Search events by name, type, or location..." aria-label="Search events by name, type, or location">
+    <a href="/events/new" class="btn btn-primary" aria-label="Add new event">Add New Event</a>
 </div>
 
-<div class="table-container">
-    <table>
+<div class="table-container" role="region" aria-label="Events table">
+    <table aria-label="Events">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Event Name</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Location</th>
-                <th>Participants</th>
-                <th>Actions</th>
+                <th scope="col">ID</th>
+                <th scope="col">Event Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Date</th>
+                <th scope="col">Location</th>
+                <th scope="col">Participants</th>
+                <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody id="events-table-body">
-            <!-- Events will be populated here when database is connected -->
+            <!-- Events populated from database -->
             <tr>
-                <td colspan="7" class="text-center">No events found. Add an event to get started.</td>
+                <td colspan="7" class="text-center" role="status" aria-live="polite">No events found. Add an event to get started.</td>
             </tr>
         </tbody>
     </table>
 </div>
 
 <script>
-    // Search functionality
+    // Search functionality with screen reader support
     document.getElementById('search-input').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
         const rows = document.querySelectorAll('#events-table-body tr');
+        let visibleCount = 0;
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
+            const isVisible = text.includes(searchTerm);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+        
+        const status = document.querySelector('#events-table-body [role="status"]');
+        if (status && visibleCount > 0) {
+            status.textContent = `${visibleCount} event${visibleCount === 1 ? '' : 's'} found`;
+        }
     });
 </script>
 

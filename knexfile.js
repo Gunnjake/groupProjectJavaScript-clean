@@ -1,7 +1,4 @@
-/**
- * Knex Configuration File
- * Database configuration for Ella Rises application
- */
+// Knex config - DB connection settings for dev and production
 
 require('dotenv').config();
 

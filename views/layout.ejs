@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="<%= typeof description !== 'undefined' ? description : 'Ella Rises empowers the future generation of women through STEAM programs and cultural heritage including Ballet Folklorico, Mariachi, and educational workshops.' %>">
+    <meta name="keywords" content="Ella Rises, STEAM education, Ballet Folklorico, Mariachi, women empowerment, cultural heritage, youth programs">
+    <meta name="author" content="Ella Rises">
+    <meta property="og:title" content="<%= typeof title !== 'undefined' ? title : 'Ella Rises' %>">
+    <meta property="og:description" content="<%= typeof description !== 'undefined' ? description : 'Empowering the future generation of women through STEAM programs and cultural heritage.' %>">
+    <meta property="og:type" content="website">
     <title><%= typeof title !== 'undefined' ? title : 'Ella Rises' %></title>
     
     <!-- Styles -->
@@ -12,6 +18,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Skip to Content Link for Accessibility -->
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    
     <!-- Navigation Header -->
     <header class="main-header">
         <nav class="navbar">
@@ -61,7 +70,7 @@
     <% } %>
 
     <!-- Main Content -->
-    <main class="main-content">
+    <main id="main-content" class="main-content">
         <%- body %>
     </main>
 

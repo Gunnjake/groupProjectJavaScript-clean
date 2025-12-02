@@ -1,7 +1,4 @@
-/**
- * Database Connection
- * PostgreSQL database connection using Knex
- */
+// Database connection using Knex (PostgreSQL)
 
 const knex = require('knex');
 const config = require('../knexfile');
