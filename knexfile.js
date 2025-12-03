@@ -1,4 +1,4 @@
-// Knex config - DB connection settings using AWS RDS variables
+// Knex config - DB connection settings using AWS RDS variables (PostgreSQL)
 
 // Load .env ONLY in development (production uses Elastic Beanstalk environment variables)
 if (process.env.NODE_ENV !== 'production') {
@@ -9,7 +9,7 @@ module.exports = {
   development: {
     client: 'postgresql',
     connection: {
-      host: process.env.RDS_HOSTNAME,
+      host: process.env.RDS_HOSTNAME ,
       port: parseInt(process.env.RDS_PORT) || 5432,
       database: process.env.RDS_DB_NAME,
       user: process.env.RDS_USERNAME,
