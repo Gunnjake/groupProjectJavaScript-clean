@@ -1,0 +1,76 @@
+<%- include('../partials/header', { title: 'Query Testing - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
+
+<div class="page-header">
+    <h1>Query Testing Page</h1>
+    <p>Test database queries and see their results</p>
+</div>
+
+<div class="form-container" style="max-width: 800px; margin: 0 auto;">
+    <!-- Test Login Query Form -->
+    <div style="margin-bottom: 3rem; padding: 2rem; border: 2px solid var(--border-light); border-radius: 8px;">
+        <h2 style="margin-bottom: 1.5rem;">Test Login Query</h2>
+        
+        <% if (typeof loginError !== 'undefined' && loginError) { %>
+            <div class="flash-message flash-error" style="margin-bottom: 1rem;">
+                <%= loginError %>
+            </div>
+        <% } %>
+        
+        <% if (typeof loginResult !== 'undefined' && loginResult) { %>
+            <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f5f5f5; border-radius: 6px;">
+                <h3 style="margin-bottom: 1rem; color: var(--coral);">Query Result:</h3>
+                <pre style="background: white; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.9rem; line-height: 1.6;"><%= JSON.stringify(loginResult, null, 2) %></pre>
+            </div>
+        <% } %>
+        
+        <form action="/test-login-query" method="POST" aria-label="Test login query form">
+            <div class="form-group">
+                <label for="test-email">Email <span aria-label="required">*</span></label>
+                <input type="email" id="test-email" name="email" required autofocus aria-required="true" 
+                       value="<%= typeof testEmail !== 'undefined' ? testEmail : '' %>">
+            </div>
+            <div class="form-group">
+                <label for="test-password">Password <span aria-label="required">*</span></label>
+                <input type="password" id="test-password" name="password" required aria-required="true">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Test Login Query</button>
+                <a href="/" class="btn btn-secondary">Back to Home</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Query Information -->
+    <div style="margin-top: 3rem; padding: 2rem; background: #f9f9f9; border-radius: 8px;">
+        <h2 style="margin-bottom: 1rem;">Query Being Tested:</h2>
+        <pre style="background: white; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; border: 1px solid #ddd;"><code>SELECT 
+    p.PersonID,
+    p.Email,
+    p.FirstName,
+    p.LastName,
+    r.RoleID,
+    r.RoleName,
+    CASE 
+        WHEN r.RoleID = 1 THEN ad.Password
+        WHEN r.RoleID = 2 THEN vd.Password
+        WHEN r.RoleID = 3 THEN pd.Password
+    END AS RolePassword,
+    ad.AdminRole,
+    ad.Salary,
+    vd.VolunteerRole,
+    pd.ParticipantSchoolOrEmployer,
+    pd.ParticipantFieldOfInterest,
+    pd.NewsLetter
+FROM People p
+JOIN PeopleRoles pr ON p.PersonID = pr.PersonID
+JOIN Roles r ON pr.RoleID = r.RoleID
+LEFT JOIN AdminDetails ad ON p.PersonID = ad.PersonID AND r.RoleID = 1
+LEFT JOIN VolunteerDetails vd ON p.PersonID = vd.PersonID AND r.RoleID = 2
+LEFT JOIN ParticipantDetails pd ON p.PersonID = pd.PersonID AND r.RoleID = 3
+WHERE p.Email = ?
+LIMIT 1</code></pre>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+

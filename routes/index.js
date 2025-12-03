@@ -311,6 +311,120 @@ router.get('/test-login', (req, res) => {
     `);
 });
 
+// Query testing page - GET
+router.get('/test-login-query', (req, res) => {
+    res.render('test/query-test', {
+        title: 'Query Testing - Ella Rises',
+        user: req.session.user || null
+    });
+});
+
+// Query testing page - POST (test the login query)
+router.post('/test-login-query', async (req, res) => {
+    const sEmail = req.body.email;
+    const sPassword = req.body.password;
+
+    try {
+        // Run the same unified login query
+        const userData = await db.raw(`
+            SELECT 
+                p.PersonID,
+                p.Email,
+                p.FirstName,
+                p.LastName,
+                r.RoleID,
+                r.RoleName,
+                CASE 
+                    WHEN r.RoleID = 1 THEN ad.Password
+                    WHEN r.RoleID = 2 THEN vd.Password
+                    WHEN r.RoleID = 3 THEN pd.Password
+                END AS RolePassword,
+                ad.AdminRole,
+                ad.Salary,
+                vd.VolunteerRole,
+                pd.ParticipantSchoolOrEmployer,
+                pd.ParticipantFieldOfInterest,
+                pd.NewsLetter
+            FROM People p
+            JOIN PeopleRoles pr ON p.PersonID = pr.PersonID
+            JOIN Roles r ON pr.RoleID = r.RoleID
+            LEFT JOIN AdminDetails ad ON p.PersonID = ad.PersonID AND r.RoleID = 1
+            LEFT JOIN VolunteerDetails vd ON p.PersonID = vd.PersonID AND r.RoleID = 2
+            LEFT JOIN ParticipantDetails pd ON p.PersonID = pd.PersonID AND r.RoleID = 3
+            WHERE p.Email = ?
+            LIMIT 1
+        `, [sEmail]);
+
+        const user = userData.rows && userData.rows.length > 0 ? userData.rows[0] : null;
+
+        if (!user) {
+            return res.render('test/query-test', {
+                title: 'Query Testing - Ella Rises',
+                user: req.session.user || null,
+                loginError: 'No user found with that email',
+                testEmail: sEmail
+            });
+        }
+
+        // Build result object showing all query data
+        const result = {
+            found: true,
+            user: {
+                PersonID: user.PersonID,
+                Email: user.Email,
+                FirstName: user.FirstName,
+                LastName: user.LastName,
+                RoleID: user.RoleID,
+                RoleName: user.RoleName,
+                RolePassword: user.RolePassword ? '***SET***' : null, // Hide password in display
+                RolePasswordMatch: user.RolePassword === sPassword,
+                ProvidedPassword: sPassword
+            },
+            roleDetails: {}
+        };
+
+        // Add role-specific details
+        if (user.RoleID === 1) {
+            result.roleDetails = {
+                AdminRole: user.AdminRole,
+                Salary: user.Salary
+            };
+        } else if (user.RoleID === 2) {
+            result.roleDetails = {
+                VolunteerRole: user.VolunteerRole
+            };
+        } else if (user.RoleID === 3) {
+            result.roleDetails = {
+                ParticipantSchoolOrEmployer: user.ParticipantSchoolOrEmployer,
+                ParticipantFieldOfInterest: user.ParticipantFieldOfInterest,
+                NewsLetter: user.NewsLetter
+            };
+        }
+
+        // Add password comparison result
+        result.passwordMatch = user.RolePassword === sPassword;
+        result.message = result.passwordMatch 
+            ? '✓ Password matches! Login would succeed.' 
+            : '✗ Password does not match. Login would fail.';
+
+        res.render('test/query-test', {
+            title: 'Query Testing - Ella Rises',
+            user: req.session.user || null,
+            loginResult: result,
+            testEmail: sEmail
+        });
+
+    } catch (err) {
+        console.error("Query test error:", err);
+        res.render('test/query-test', {
+            title: 'Query Testing - Ella Rises',
+            user: req.session.user || null,
+            loginError: `Query Error: ${err.message}`,
+            testEmail: sEmail
+        });
+    }
+});
+
 // Login form submission - plain text password comparison
 // Login form submission - single unified query with conditional role details
 router.post('/login', async (req, res) => {
