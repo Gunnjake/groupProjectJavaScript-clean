@@ -355,7 +355,7 @@ router.post('/login', async (req, res) => {
             .first();
 
         if (!userRoleData) {
-            return res.render("login", { error_message: "User not found" });
+            return res.render("auth/login", { error_message: "User not found" });
         }
 
         const roleName = userRoleData.rolename;
@@ -377,10 +377,10 @@ router.post('/login', async (req, res) => {
                 break;
 
             case 'Participant':
-                return res.render("login", { error_message: "Participants cannot login." });
+                return res.render("auth/login", { error_message: "Participants cannot login." });
 
             default:
-                return res.render("login", { error_message: "Invalid role assignment." });
+                return res.render("auth/login", { error_message: "Invalid role assignment." });
         }
 
         if (validUser) {
@@ -390,12 +390,12 @@ router.post('/login', async (req, res) => {
 
             return res.redirect("/");
         } else {
-            return res.render("login", { error_message: "Invalid password" });
+            return res.render("auth/login", { error_message: "Invalid password" });
         }
 
     } catch (err) {
         console.error("Login error:", err);
-        return res.render("login", { error_message: "System error during login" });
+        return res.render("auth/login", { error_message: "System error during login" });
     }
 });
 
