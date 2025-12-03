@@ -35,7 +35,7 @@
                     </div>
                     <div style="padding: 1.5rem;">
                         <% 
-                            const eventDate = event.EventDate || event.event_date;
+                            const eventDate = event.EventDateTimeStart || event.event_date || event.EventDate;
                             let formattedDate = 'Date TBA';
                             if (eventDate) {
                                 try {

@@ -214,10 +214,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
         
         if (navMenu && mobileMenuToggle) {
-            // On desktop (wide screens), always show navigation
+            // On desktop (wide screens), always show navigation - never hide it
             if (window.innerWidth > 1024) {
                 mobileMenuToggle.style.display = 'none';
                 navMenu.style.display = 'flex';
+                navMenu.style.setProperty('display', 'flex', 'important');
                 navMenu.classList.remove('active');
                 mobileMenuToggle.setAttribute('aria-expanded', 'false');
                 checkHeroCirclesWrap();
@@ -406,18 +407,29 @@ document.addEventListener('DOMContentLoaded', function() {
         // Small delay to ensure page is fully rendered
         setTimeout(function() {
             const navMenu = document.querySelector('.nav-menu');
+            const adminNavMenu = document.querySelector('.admin-nav-menu');
             const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+            const adminMenuToggle = document.querySelector('.admin-mobile-menu-toggle');
             
-            // Only restore if we're on desktop (not mobile)
-            if (navMenu && mobileMenuToggle && window.innerWidth > 1024) {
-                const toggleDisplay = window.getComputedStyle(mobileMenuToggle).display;
-                // If hamburger is hidden (desktop view), ensure nav menu is visible
-                if (toggleDisplay === 'none' || toggleDisplay === '') {
-                    // Clear any inline styles that might hide it
-                    navMenu.style.display = '';
-                    // Re-run check to ensure proper state
-                    checkNavWrap();
+            // On desktop, always ensure navigation is visible
+            if (window.innerWidth > 1024) {
+                if (navMenu) {
+                    navMenu.style.display = 'flex';
+                    navMenu.style.setProperty('display', 'flex', 'important');
                 }
+                if (adminNavMenu) {
+                    adminNavMenu.style.display = 'flex';
+                    adminNavMenu.style.setProperty('display', 'flex', 'important');
+                }
+                if (mobileMenuToggle) {
+                    mobileMenuToggle.style.display = 'none';
+                }
+                if (adminMenuToggle) {
+                    adminMenuToggle.style.display = 'none';
+                }
+                // Re-run check to ensure proper state
+                checkNavWrap();
+                checkAdminNavWrap();
             }
         }, 100);
     });
@@ -440,22 +452,56 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Close menu when clicking outside
+        // On desktop, always keep navigation visible - never hide it
+        // Only allow mobile menu toggle on mobile devices
         document.addEventListener('click', function(e) {
-            if (!mobileMenuToggle.contains(e.target) && !navMenu.contains(e.target)) {
-                mobileMenuToggle.setAttribute('aria-expanded', 'false');
-                navMenu.classList.remove('active');
-                navMenu.style.display = 'none';
+            // On desktop, always ensure navigation is visible
+            if (window.innerWidth > 1024) {
+                if (navMenu) {
+                    navMenu.style.display = 'flex';
+                    navMenu.classList.remove('active');
+                }
+                if (mobileMenuToggle) {
+                    mobileMenuToggle.style.display = 'none';
+                }
+                return; // Don't process mobile menu logic on desktop
+            }
+            
+            // Mobile-only: close menu when clicking outside
+            const toggleDisplay = window.getComputedStyle(mobileMenuToggle).display;
+            const isMobile = toggleDisplay !== 'none' && toggleDisplay !== '';
+            
+            if (isMobile && !mobileMenuToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                // Only close if menu is currently open (has active class)
+                if (navMenu.classList.contains('active')) {
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                    navMenu.classList.remove('active');
+                    navMenu.style.display = 'none';
+                }
             }
         });
 
-        // Close menu when clicking a link
+        // Close menu when clicking a link (only on mobile when hamburger is visible)
         const navLinks = navMenu.querySelectorAll('.nav-link');
         navLinks.forEach(function(link) {
             link.addEventListener('click', function() {
-                mobileMenuToggle.setAttribute('aria-expanded', 'false');
-                navMenu.classList.remove('active');
-                navMenu.style.display = 'none';
+                // On desktop, always keep navigation visible
+                if (window.innerWidth > 1024) {
+                    if (navMenu) {
+                        navMenu.style.display = 'flex';
+                    }
+                    return;
+                }
+                
+                // Mobile-only: close menu when clicking a link
+                const toggleDisplay = window.getComputedStyle(mobileMenuToggle).display;
+                const isMobile = toggleDisplay !== 'none' && toggleDisplay !== '';
+                
+                if (isMobile) {
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                    navMenu.classList.remove('active');
+                    navMenu.style.display = 'none';
+                }
             });
         });
     }
@@ -476,22 +522,56 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Close menu when clicking outside
+        // On desktop, always keep admin navigation visible - never hide it
+        // Only allow mobile menu toggle on mobile devices
         document.addEventListener('click', function(e) {
-            if (!adminMenuToggle.contains(e.target) && !adminNavMenu.contains(e.target)) {
-                adminMenuToggle.setAttribute('aria-expanded', 'false');
-                adminNavMenu.classList.remove('active');
-                adminNavMenu.style.display = 'none';
+            // On desktop, always ensure admin navigation is visible
+            if (window.innerWidth > 1024) {
+                if (adminNavMenu) {
+                    adminNavMenu.style.display = 'flex';
+                    adminNavMenu.classList.remove('active');
+                }
+                if (adminMenuToggle) {
+                    adminMenuToggle.style.display = 'none';
+                }
+                return; // Don't process mobile menu logic on desktop
+            }
+            
+            // Mobile-only: close menu when clicking outside
+            const toggleDisplay = window.getComputedStyle(adminMenuToggle).display;
+            const isMobile = toggleDisplay !== 'none' && toggleDisplay !== '';
+            
+            if (isMobile && !adminMenuToggle.contains(e.target) && !adminNavMenu.contains(e.target)) {
+                // Only close if menu is currently open (has active class)
+                if (adminNavMenu.classList.contains('active')) {
+                    adminMenuToggle.setAttribute('aria-expanded', 'false');
+                    adminNavMenu.classList.remove('active');
+                    adminNavMenu.style.display = 'none';
+                }
             }
         });
 
-        // Close menu when clicking a link
+        // Close menu when clicking a link (only on mobile when hamburger is visible)
         const adminNavLinks = adminNavMenu.querySelectorAll('.admin-nav-link');
         adminNavLinks.forEach(function(link) {
             link.addEventListener('click', function() {
-                adminMenuToggle.setAttribute('aria-expanded', 'false');
-                adminNavMenu.classList.remove('active');
-                adminNavMenu.style.display = 'none';
+                // On desktop, always keep admin navigation visible
+                if (window.innerWidth > 1024) {
+                    if (adminNavMenu) {
+                        adminNavMenu.style.display = 'flex';
+                    }
+                    return;
+                }
+                
+                // Mobile-only: close menu when clicking a link
+                const toggleDisplay = window.getComputedStyle(adminMenuToggle).display;
+                const isMobile = toggleDisplay !== 'none' && toggleDisplay !== '';
+                
+                if (isMobile) {
+                    adminMenuToggle.setAttribute('aria-expanded', 'false');
+                    adminNavMenu.classList.remove('active');
+                    adminNavMenu.style.display = 'none';
+                }
             });
         });
     }

@@ -25,10 +25,45 @@
             </tr>
         </thead>
         <tbody id="events-table-body">
-            <!-- Events populated from database -->
-            <tr>
-                <td colspan="7" class="text-center" role="status" aria-live="polite">No events found. Add an event to get started.</td>
-            </tr>
+            <% if (typeof events !== 'undefined' && events.length > 0) { %>
+                <% events.forEach(function(event) { %>
+                    <tr>
+                        <td><%= event.EventOccurrenceID || event.eventoccurrenceid || event.id %></td>
+                        <td><%= event.EventName || event.eventname %></td>
+                        <td><%= event.EventType || event.event_type || 'N/A' %></td>
+                        <td>
+                            <% 
+                                const eventDate = event.EventDateTimeStart || event.eventdatetimestart;
+                                if (eventDate) {
+                                    try {
+                                        const date = new Date(eventDate);
+                                        const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                        const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                                        const output = formattedDate + ' ' + formattedTime;
+                            %>
+                                <%= output %>
+                            <%  } catch(e) { %>
+                                <%= eventDate %>
+                            <%  }
+                                } else { %>
+                                TBA
+                            <% } %>
+                        </td>
+                        <td><%= event.EventLocation || event.eventlocation || event.location || 'TBA' %></td>
+                        <td>N/A</td>
+                        <td>
+                            <a href="/events/<%= event.EventOccurrenceID || event.eventoccurrenceid || event.id %>/edit" class="btn btn-sm btn-secondary" aria-label="Edit event">Edit</a>
+                            <form action="/events/<%= event.EventOccurrenceID || event.eventoccurrenceid || event.id %>/delete" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this event?');" aria-label="Delete event">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="7" class="text-center" role="status" aria-live="polite">No events found. Add an event to get started.</td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>

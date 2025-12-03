@@ -23,10 +23,26 @@
             </tr>
         </thead>
         <tbody id="milestones-table-body">
-            <!-- Milestones populated from database -->
-            <tr>
-                <td colspan="6" class="text-center" role="status" aria-live="polite">No milestones found.</td>
-            </tr>
+            <% if (typeof milestones !== 'undefined' && milestones.length > 0) { %>
+                <% milestones.forEach(function(milestone) { %>
+                    <tr>
+                        <td><%= milestone.MilestoneID || milestone.milestoneid || milestone.id %></td>
+                        <td><%= milestone.MilestoneTitle || milestone.milestonetitle || milestone.title || 'N/A' %></td>
+                        <td>N/A</td>
+                        <td>
+                            <%= (milestone.FirstName || milestone.firstname || milestone.firstName || '') + ' ' + (milestone.LastName || milestone.lastname || milestone.lastName || '') %>
+                        </td>
+                        <td>
+                            <%= milestone.MilestoneDate ? new Date(milestone.MilestoneDate).toLocaleDateString() : (milestone.milestonedate ? new Date(milestone.milestonedate).toLocaleDateString() : 'N/A') %>
+                        </td>
+                        <td>Active</td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="6" class="text-center" role="status" aria-live="polite">No milestones found.</td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>

@@ -25,10 +25,32 @@
             </tr>
         </thead>
         <tbody id="milestones-table-body">
-            <!-- Milestones populated from database -->
-            <tr>
-                <td colspan="7" class="text-center" role="status" aria-live="polite">No milestones found. Add a milestone to get started.</td>
-            </tr>
+            <% if (typeof milestones !== 'undefined' && milestones.length > 0) { %>
+                <% milestones.forEach(function(milestone) { %>
+                    <tr>
+                        <td><%= milestone.MilestoneID || milestone.milestoneid || milestone.id %></td>
+                        <td><%= milestone.MilestoneTitle || milestone.milestonetitle || milestone.title || 'N/A' %></td>
+                        <td>N/A</td>
+                        <td>
+                            <%= (milestone.FirstName || milestone.firstname || milestone.firstName || '') + ' ' + (milestone.LastName || milestone.lastname || milestone.lastName || '') %>
+                        </td>
+                        <td>
+                            <%= milestone.MilestoneDate ? new Date(milestone.MilestoneDate).toLocaleDateString() : (milestone.milestonedate ? new Date(milestone.milestonedate).toLocaleDateString() : 'N/A') %>
+                        </td>
+                        <td>Active</td>
+                        <td>
+                            <a href="/milestones/<%= milestone.MilestoneID || milestone.milestoneid || milestone.id %>/edit" class="btn btn-sm btn-secondary" aria-label="Edit milestone">Edit</a>
+                            <form action="/milestones/<%= milestone.MilestoneID || milestone.milestoneid || milestone.id %>/delete" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this milestone?');" aria-label="Delete milestone">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="7" class="text-center" role="status" aria-live="polite">No milestones found. Add a milestone to get started.</td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>

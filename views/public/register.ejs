@@ -56,6 +56,17 @@
                         <input type="text" id="school" name="school" value="<%= typeof user !== 'undefined' && user ? user.school || '' : '' %>" autocomplete="organization">
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group form-group-half">
+                        <label for="fieldOfInterest">Field of Interest</label>
+                        <input type="text" id="fieldOfInterest" name="fieldOfInterest" value="<%= typeof user !== 'undefined' && user ? user.fieldOfInterest || '' : '' %>" placeholder="e.g., STEM, Arts, Education">
+                    </div>
+                    <div class="form-group form-group-half">
+                        <label for="birthdate">Birthdate</label>
+                        <input type="date" id="birthdate" name="birthdate" value="<%= typeof user !== 'undefined' && user ? user.birthdate || '' : '' %>" aria-describedby="birthdate-hint">
+                        <small id="birthdate-hint" class="field-hint">Used to calculate age</small>
+                    </div>
+                </div>
             </fieldset>
 
             <!-- Location Information Section -->
@@ -113,8 +124,19 @@
                 </fieldset>
             <% } %>
 
+            <!-- Newsletter Subscription Section -->
+            <fieldset class="form-section">
+                <legend class="section-header">Newsletter</legend>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="newsletter" name="newsletter" value="yes" style="width: auto; margin-right: 0.5rem; cursor: pointer;">
+                        <span>Subscribe to our newsletter to receive updates about programs, events, and opportunities</span>
+                    </label>
+                </div>
+            </fieldset>
+
             <!-- Submit Button -->
-            <div class="form-section">
+            <div class="form-section form-section-submit">
                 <button type="submit" class="btn btn-primary btn-submit" aria-label="<%= typeof user !== 'undefined' && user ? 'Register for selected program' : 'Create account and register for program' %>"><%= typeof user !== 'undefined' && user ? 'Register for Program' : 'Create Account & Register' %></button>
                 <% if (typeof user === 'undefined' || !user) { %>
                     <div style="text-align: center; margin-top: 1rem;">
@@ -176,6 +198,11 @@ document.getElementById('registration-form')?.addEventListener('submit', functio
     padding-bottom: 0;
 }
 
+.form-section-submit {
+    margin-top: 2rem;
+    padding-top: 2rem;
+}
+
 .section-header {
     font-family: var(--font-header), serif;
     font-size: 1.5rem;
@@ -198,6 +225,10 @@ document.getElementById('registration-form')?.addEventListener('submit', functio
 }
 
 .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
     margin-bottom: 0;
 }
 

@@ -27,10 +27,27 @@
             </tr>
         </thead>
         <tbody id="users-table-body">
-            <!-- Users populated from database -->
-            <tr>
-                <td colspan="6" class="text-center" role="status" aria-live="polite">No users found. Add a user to get started.</td>
-            </tr>
+            <% if (typeof users !== 'undefined' && users.length > 0) { %>
+                <% users.forEach(function(user) { %>
+                    <tr>
+                        <td><%= user.PersonID || user.personid || user.id %></td>
+                        <td><%= user.Email || user.email || 'N/A' %></td>
+                        <td><%= user.Email || user.email || 'N/A' %></td>
+                        <td><%= user.roles || 'N/A' %></td>
+                        <td>N/A</td>
+                        <td>
+                            <a href="/users/<%= user.PersonID || user.personid || user.id %>/edit" class="btn btn-sm btn-secondary" aria-label="Edit user">Edit</a>
+                            <form action="/users/<%= user.PersonID || user.personid || user.id %>/delete" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this user?');" aria-label="Delete user">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="6" class="text-center" role="status" aria-live="polite">No users found. Add a user to get started.</td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>

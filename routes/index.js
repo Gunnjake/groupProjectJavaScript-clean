@@ -14,10 +14,19 @@ const db = require('../db');
 // Homepage - shows upcoming events
 router.get('/', async (req, res) => {
     try {
-        const events = await db('EventTemplates')
-            .select('*')
-            .where('event_date', '>=', new Date())
-            .orderBy('event_date', 'asc')
+        // Get upcoming event occurrences (matching FInalTableCreation.sql schema)
+        const events = await db('EventOccurrences')
+            .join('EventTemplate', 'EventOccurrences.EventTemplateID', 'EventTemplate.EventTemplateID')
+            .select(
+                'EventOccurrences.EventOccurrenceID as event_id',
+                'EventOccurrences.EventName as event_name',
+                'EventOccurrences.EventDateTimeStart as event_date',
+                'EventOccurrences.EventLocation as location',
+                'EventOccurrences.EventDescription as description',
+                'EventTemplate.EventType as event_type'
+            )
+            .where('EventOccurrences.EventDateTimeStart', '>=', new Date())
+            .orderBy('EventOccurrences.EventDateTimeStart', 'asc')
             .limit(5);
         
         res.render('public/landing', {
@@ -27,8 +36,12 @@ router.get('/', async (req, res) => {
             events: events || []
         });
     } catch (error) {
-        // Render without events if DB fails
-        console.error('Error fetching events:', error);
+        // Render without events if DB fails or tables don't exist
+        if (error.code === '42P01' || error.message.includes('does not exist')) {
+            console.log('Database tables not created yet. Run FInalTableCreation.sql to create tables.');
+        } else {
+            console.error('Error fetching events:', error);
+        }
         res.render('public/landing', {
             title: 'Ella Rises - Empowering the Future Generation of Women',
             description: 'Join Ella Rises in empowering young women through STEAM programs, Ballet Folklorico, Mariachi, and cultural heritage education. Register for programs and events today.',
@@ -82,13 +95,29 @@ router.get('/register', (req, res) => {
 
 // Registration - creates account + participant + registration
 router.post('/register', async (req, res) => {
-    const { firstName, lastName, email, phone, age, program, city, state, zip, school, password, confirmPassword } = req.body;
+    const { firstName, lastName, email, phone, age, program, city, state, zip, school, fieldOfInterest, birthdate, password, confirmPassword, newsletter } = req.body;
     
     try {
         // If already logged in, just register for program
         if (req.session.user) {
             const userId = req.session.user.id;
             // TODO: Save registration to DB
+            
+            // Subscribe to newsletter if checked
+            // if (newsletter === 'yes') {
+            //     try {
+            //         await db('NewsletterSubscriptions').insert({
+            //             Email: email,
+            //             FirstName: firstName,
+            //             LastName: lastName,
+            //             SubscriptionDate: new Date(),
+            //             IsActive: true
+            //         }).onConflict('Email').merge({ IsActive: true, SubscriptionDate: new Date() });
+            //     } catch (newsletterError) {
+            //         console.error('Newsletter subscription error:', newsletterError);
+            //     }
+            // }
+            
             req.session.messages = [{ 
                 type: 'success', 
                 text: `Thank you! You've been registered for ${program}.` 
@@ -113,40 +142,75 @@ router.post('/register', async (req, res) => {
             return res.redirect('/register');
         }
         
-        // TODO: Create user + participant + registration in DB
-        // Create user account
-        // const passwordHash = await bcrypt.hash(password, 10);
-        // const newUser = await db('Users').insert({
-        //     Username: email.split('@')[0],
+        // Create person + participant + registration in DB (matching FInalTableCreation.sql schema)
+        // Step 1: Create person record in People table
+        // const birthdateValue = birthdate || (age ? new Date(new Date().getFullYear() - parseInt(age), 0, 1) : null);
+        // const newPerson = await db('People').insert({
         //     Email: email,
-        //     Password_Hash: passwordHash,
-        //     Role: 'user',
         //     FirstName: firstName,
         //     LastName: lastName,
-        //     Phone: phone
-        // }).returning('*');
-        
-        // Create participant record
-        // const newParticipant = await db('Participants').insert({
-        //     ParticipantEmail: email,
-        //     ParticipantFirstName: firstName,
-        //     ParticipantLastName: lastName,
-        //     ParticipantPhone: phone,
-        //     ParticipantDOB: new Date().getFullYear() - parseInt(age) + '-01-01',
-        //     ParticipantCity: city,
-        //     ParticipantState: state,
-        //     ParticipantZip: zip,
-        //     ParticipantSchoolOrEmployer: school,
-        //     ParticipantID: newUser[0].UserID
+        //     Birthdate: birthdateValue,
+        //     PhoneNumber: phone,
+        //     City: city,
+        //     State: state,
+        //     Zip: zip,
+        //     Country: 'USA'
+        // }).returning('PersonID');
+        // 
+        // const personId = newPerson[0].PersonID;
+        // 
+        // // Step 2: Get or create Participant role
+        // let participantRole = await db('Roles').where({ RoleName: 'Participant' }).first();
+        // if (!participantRole) {
+        //     participantRole = await db('Roles').insert({ RoleName: 'Participant' }).returning('*')[0];
+        // }
+        // 
+        // // Step 3: Assign Participant role to person
+        // await db('PeopleRoles').insert({
+        //     PersonID: personId,
+        //     RoleID: participantRole.RoleID
         // });
-        
-        // Register for program
-        // const programEvent = await db('EventTemplates').where({ EventName: program }).first();
+        // 
+        // // Step 4: Create participant details record
+        // const passwordHash = await bcrypt.hash(password, 10);
+        // await db('ParticipantDetails').insert({
+        //     PersonID: personId,
+        //     ParticipantSchoolOrEmployer: school || null,
+        //     ParticipantFieldOfInterest: fieldOfInterest || null,
+        //     Password: passwordHash,
+        //     NewsLetter: newsletter === 'yes' ? 1 : 0
+        // });
+        // 
+        // // Step 5: Find event template for the program
+        // const programEvent = await db('EventTemplate').where({ EventName: program }).first();
         // if (programEvent) {
-        //     await db('Registrations').insert({
-        //         ParticipantID: newUser[0].UserID,
-        //         EventTemplateID: programEvent.EventTemplateID,
-        //         RegistrationDate: new Date()
+        //     // Find or create an event occurrence for registration
+        //     // For now, register to the first upcoming occurrence or create one
+        //     let eventOccurrence = await db('EventOccurrences')
+        //         .where({ EventTemplateID: programEvent.EventTemplateID })
+        //         .where('EventDateTimeStart', '>', new Date())
+        //         .orderBy('EventDateTimeStart', 'asc')
+        //         .first();
+        //     
+        //     if (!eventOccurrence) {
+        //         // Create a default occurrence if none exists
+        //         eventOccurrence = await db('EventOccurrences').insert({
+        //             EventTemplateID: programEvent.EventTemplateID,
+        //             EventName: program,
+        //             EventDateTimeStart: new Date(),
+        //             EventDateTimeEnd: new Date(),
+        //             EventLocation: 'TBD',
+        //             EventCapacity: programEvent.EventDefaultCapacity || 50
+        //         }).returning('*')[0];
+        //     }
+        //     
+        //     // Step 6: Create registration
+        //     await db('EventRegistrations').insert({
+        //         PersonID: personId,
+        //         EventOccurrenceID: eventOccurrence.EventOccurrenceID,
+        //         RegistrationStatus: 'Registered',
+        //         RegistrationAttendedFlag: 0,
+        //         RegistrationCreatedAt: new Date()
         //     });
         // }
         
@@ -196,34 +260,6 @@ router.get('/teapot', (req, res) => {
 });
 
 // ============================================================================
-// TEST LOGIN (no DB required)
-// ============================================================================
-
-router.get('/test-login/admin', (req, res) => {
-    req.session.user = {
-        id: 999,
-        username: 'test-admin',
-        role: 'manager',
-        email: 'admin@test.com'
-    };
-    const returnTo = req.session.returnTo || '/dashboard';
-    delete req.session.returnTo;
-    res.redirect(returnTo);
-});
-
-router.get('/test-login/customer', (req, res) => {
-    req.session.user = {
-        id: 998,
-        username: 'test-customer',
-        role: 'user',
-        email: 'customer@test.com'
-    };
-    const returnTo = req.session.returnTo || '/dashboard';
-    delete req.session.returnTo;
-    res.redirect(returnTo);
-});
-
-// ============================================================================
 // AUTHENTICATION ROUTES
 // ============================================================================
 
@@ -244,69 +280,121 @@ router.get('/login', (req, res) => {
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     
-    if (!username || !password) {
+    if (!username) {
         return res.render('auth/login', {
             title: 'Login - Ella Rises',
-            error: 'Please provide both username and password',
+            error: 'Please provide your username',
             user: null
         });
     }
     
     try {
-        // Database authentication
+        // Database authentication - matching FInalTableCreation.sql schema
         try {
-            const user = await db('Users').where({ username }).first();
-            if (!user) {
+            // Find person by email (username can be email)
+            const person = await db('People')
+                .where({ Email: username })
+                .orWhere({ email: username })
+                .first();
+                
+            if (!person) {
                 return res.render('auth/login', {
                     title: 'Login - Ella Rises',
-                    error: 'Invalid username or password',
+                    error: 'Invalid email address',
                     user: null
                 });
             }
-            const validPassword = await bcrypt.compare(password, user.password_hash);
+            
+            const personId = person.PersonID || person.personid || person.id;
+            
+            // Get person's roles from PeopleRoles junction table
+            const personRoles = await db('PeopleRoles')
+                .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
+                .where({ PersonID: personId })
+                .select('Roles.RoleName');
+            
+            // Determine user role and get password from appropriate detail table
+            let userRole = 'user'; // default
+            let passwordHash = null;
+            let detailRecord = null;
+            
+            // Check for Admin role first (highest priority)
+            const isAdmin = personRoles.some(r => (r.RoleName || r.rolename || '').toLowerCase() === 'admin');
+            if (isAdmin) {
+                userRole = 'manager';
+                detailRecord = await db('AdminDetails').where({ PersonID: personId }).first();
+                if (detailRecord) {
+                    passwordHash = detailRecord.Password || detailRecord.password;
+                }
+            } else {
+                // Check for Participant role
+                const isParticipant = personRoles.some(r => (r.RoleName || r.rolename || '').toLowerCase() === 'participant');
+                if (isParticipant) {
+                    userRole = 'user';
+                    detailRecord = await db('ParticipantDetails').where({ PersonID: personId }).first();
+                    if (detailRecord) {
+                        passwordHash = detailRecord.Password || detailRecord.password;
+                    }
+                } else {
+                    // Check for Volunteer role
+                    const isVolunteer = personRoles.some(r => (r.RoleName || r.rolename || '').toLowerCase() === 'volunteer');
+                    if (isVolunteer) {
+                        userRole = 'user';
+                        detailRecord = await db('VolunteerDetails').where({ PersonID: personId }).first();
+                        if (detailRecord) {
+                            passwordHash = detailRecord.Password || detailRecord.password;
+                        }
+                    }
+                }
+            }
+            
+            // Check if user has a password set
+            if (!passwordHash || (typeof passwordHash === 'string' && passwordHash.trim() === '')) {
+                // User exists but has no password - redirect to password setup
+                req.session.setupPasswordUserId = personId;
+                req.session.setupPasswordUsername = person.Email || person.email;
+                req.session.setupPasswordEmail = person.Email || person.email;
+                return res.redirect('/setup-password');
+            }
+            
+            // User has a password - verify it
+            if (!password) {
+                return res.render('auth/login', {
+                    title: 'Login - Ella Rises',
+                    error: 'Please provide your password',
+                    user: null
+                });
+            }
+            
+            const validPassword = await bcrypt.compare(password, passwordHash);
             if (!validPassword) {
                 return res.render('auth/login', {
                     title: 'Login - Ella Rises',
-                    error: 'Invalid username or password',
+                    error: 'Invalid password',
                     user: null
                 });
             }
             
             req.session.user = {
-                id: user.userid,
-                username: user.username,
-                role: user.role,
-                email: user.email
+                id: personId,
+                username: person.Email || person.email,
+                role: userRole,
+                email: person.Email || person.email,
+                firstName: person.FirstName || person.firstname,
+                lastName: person.LastName || person.lastname
             };
             
             const returnTo = req.session.returnTo || '/dashboard';
             delete req.session.returnTo;
             res.redirect(returnTo);
         } catch (dbError) {
-            // If Users table doesn't exist yet, use placeholder authentication
-            console.log('Database error (Users table may not exist):', dbError.message);
-            
-            // Temporary placeholder authentication for development
-            // TODO: Remove this when Users table is created in database
-            if (!username || !password) {
-                return res.render('auth/login', {
-                    title: 'Login - Ella Rises',
-                    error: 'Please provide both username and password',
-                    user: null
-                });
-            }
-            
-            // Simple placeholder: username containing "manager" = manager role, otherwise = user role
-            req.session.user = {
-                id: 1,
-                username: username,
-                role: username.toLowerCase().includes('manager') ? 'manager' : 'user',
-                email: `${username}@example.com`
-            };
-            
-            const returnTo = req.session.returnTo || '/dashboard';
-            delete req.session.returnTo;
-            res.redirect(returnTo);
+            // Database error - show error message
+            console.error('Database authentication error:', dbError.message);
+            return res.render('auth/login', {
+                title: 'Login - Ella Rises',
+                error: 'Database connection error. Please try again later.',
+                user: null
+            });
         }
         
     } catch (error) {
@@ -314,6 +402,107 @@ router.post('/login', async (req, res) => {
         res.render('auth/login', {
             title: 'Login - Ella Rises',
             error: 'An error occurred during login. Please try again.',
+            user: null
+        });
+    }
+});
+
+// Password setup page - for users without passwords
+router.get('/setup-password', (req, res) => {
+    // Check if user is in password setup flow
+    if (!req.session.setupPasswordUserId) {
+        return res.redirect('/login');
+    }
+    
+    res.render('auth/setup-password', {
+        title: 'Setup Password - Ella Rises',
+        username: req.session.setupPasswordUsername || '',
+        email: req.session.setupPasswordEmail || '',
+        user: null
+    });
+});
+
+// Password setup form submission
+router.post('/setup-password', async (req, res) => {
+    const { password, confirmPassword } = req.body;
+    const userId = req.session.setupPasswordUserId;
+    const username = req.session.setupPasswordUsername;
+    const email = req.session.setupPasswordEmail;
+    
+    if (!userId) {
+        return res.redirect('/login');
+    }
+    
+    // Validate passwords
+    if (!password || password.length < 8) {
+        return res.render('auth/setup-password', {
+            title: 'Setup Password - Ella Rises',
+            username: username || '',
+            email: email || '',
+            error: 'Password must be at least 8 characters long',
+            user: null
+        });
+    }
+    
+    if (password !== confirmPassword) {
+        return res.render('auth/setup-password', {
+            title: 'Setup Password - Ella Rises',
+            username: username || '',
+            email: email || '',
+            error: 'Passwords do not match',
+            user: null
+        });
+    }
+    
+    try {
+        // Hash password and save to database (matching FInalTableCreation.sql schema)
+        // Determine which detail table to update based on user's roles
+        // const passwordHash = await bcrypt.hash(password, 10);
+        // 
+        // // Get person's roles
+        // const personRoles = await db('PeopleRoles')
+        //     .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
+        //     .where({ PersonID: userId })
+        //     .select('Roles.RoleName');
+        // 
+        // const roleNames = personRoles.map(r => (r.RoleName || r.rolename || '').toLowerCase());
+        // 
+        // // Update password in appropriate detail table
+        // if (roleNames.includes('admin')) {
+        //     // Update AdminDetails
+        //     await db('AdminDetails')
+        //         .where({ PersonID: userId })
+        //         .update({ Password: passwordHash });
+        // } else if (roleNames.includes('participant')) {
+        //     // Update ParticipantDetails
+        //     await db('ParticipantDetails')
+        //         .where({ PersonID: userId })
+        //         .update({ Password: passwordHash });
+        // } else if (roleNames.includes('volunteer')) {
+        //     // Update VolunteerDetails
+        //     await db('VolunteerDetails')
+        //         .where({ PersonID: userId })
+        //         .update({ Password: passwordHash });
+        // }
+        
+        // Clear setup session variables
+        delete req.session.setupPasswordUserId;
+        delete req.session.setupPasswordUsername;
+        delete req.session.setupPasswordEmail;
+        
+        req.session.messages = [{
+            type: 'success',
+            text: 'Password set successfully! You can now login with your username and password.'
+        }];
+        
+        res.redirect('/login');
+    } catch (error) {
+        console.error('Password setup error:', error);
+        res.render('auth/setup-password', {
+            title: 'Setup Password - Ella Rises',
+            username: username || '',
+            email: email || '',
+            error: 'An error occurred while setting up your password. Please try again.',
             user: null
         });
     }
@@ -348,19 +537,20 @@ router.get('/dashboard', requireAuth, async (req, res) => {
                 registrations: []
             });
         } else {
-            // User sees their registrations and surveys
+            // User sees their registrations and surveys (matching FInalTableCreation.sql schema)
             try {
-                const registrations = await db('Registrations')
-                    .join('EventTemplates', 'Registrations.EventTemplateID', 'EventTemplates.EventTemplateID')
-                    .where({ 'Registrations.ParticipantID': userId })
-                    .select('EventTemplates.EventName as program', 'Registrations.RegistrationDate as registrationDate')
-                    .orderBy('Registrations.RegistrationDate', 'desc');
+                const registrations = await db('EventRegistrations')
+                    .join('EventOccurrences', 'EventRegistrations.EventOccurrenceID', 'EventOccurrences.EventOccurrenceID')
+                    .join('EventTemplate', 'EventOccurrences.EventTemplateID', 'EventTemplate.EventTemplateID')
+                    .where({ 'EventRegistrations.PersonID': userId })
+                    .select('EventTemplate.EventName as program', 'EventRegistrations.RegistrationCreatedAt as registrationDate')
+                    .orderBy('EventRegistrations.RegistrationCreatedAt', 'desc');
                 
                 const surveys = await db('Surveys')
-                    .join('Registrations', 'Surveys.RegistrationID', 'Registrations.RegistrationID')
-                    .join('EventTemplates', 'Registrations.EventTemplateID', 'EventTemplates.EventTemplateID')
-                    .where({ 'Registrations.ParticipantID': userId })
-                    .select('Surveys.*', 'EventTemplates.EventName as eventName')
+                    .join('EventRegistrations', 'Surveys.RegistrationID', 'EventRegistrations.RegistrationID')
+                    .join('EventOccurrences', 'EventRegistrations.EventOccurrenceID', 'EventOccurrences.EventOccurrenceID')
+                    .where({ 'EventRegistrations.PersonID': userId })
+                    .select('Surveys.*', 'EventOccurrences.EventName as eventName')
                     .orderBy('Surveys.SurveySubmissionDate', 'desc');
                 
                 res.render('dashboard/index', {
@@ -399,24 +589,75 @@ router.get('/dashboard', requireAuth, async (req, res) => {
 // USER MAINTENANCE ROUTES (Manager only)
 // ============================================================================
 
+router.get('/newsletter', requireAuth, requireManager, async (req, res) => {
+    try {
+        // Get newsletter subscribers from ParticipantDetails (matching FInalTableCreation.sql schema)
+        // NewsLetter field is 1 for subscribed, 0 for not subscribed
+        const subscribers = await db('ParticipantDetails')
+            .join('People', 'ParticipantDetails.PersonID', 'People.PersonID')
+            .where('ParticipantDetails.NewsLetter', 1)
+            .select(
+                'People.Email',
+                'People.FirstName',
+                'People.LastName',
+                'People.PersonID'
+            )
+            .orderBy('People.PersonID', 'desc');
+        
+        res.render('manager/newsletter', {
+            title: 'Newsletter Subscribers - Ella Rises',
+            user: req.session.user,
+            subscribers: subscribers || [],
+            messages: req.session.messages || []
+        });
+        req.session.messages = [];
+    } catch (error) {
+        console.error('Error fetching newsletter subscribers:', error);
+        res.render('manager/newsletter', {
+            title: 'Newsletter Subscribers - Ella Rises',
+            user: req.session.user,
+            subscribers: [],
+            messages: [{ type: 'info', text: 'Database not connected. Newsletter subscribers will appear here once the database is set up.' }]
+        });
+        req.session.messages = [];
+    }
+});
+
 router.get('/users', requireAuth, requireManager, async (req, res) => {
     try {
-        const users = await db('Users').select('*').orderBy('created_at', 'desc');
+        // Get all people with their roles (matching FInalTableCreation.sql schema)
+        // For PostgreSQL, we'll get people and their roles separately
+        const people = await db('People')
+            .select('*')
+            .orderBy('People.PersonID', 'desc');
+        
+        // Get roles for each person
+        const users = await Promise.all(people.map(async (person) => {
+            const roles = await db('PeopleRoles')
+                .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
+                .where('PeopleRoles.PersonID', person.PersonID || person.personid)
+                .select('Roles.RoleName');
+            
+            return {
+                ...person,
+                roles: roles.map(r => r.RoleName || r.rolename).join(', ')
+            };
+        }));
+        
         res.render('manager/users', {
             title: 'User Maintenance - Ella Rises',
             user: req.session.user,
-            users: users,
+            users: users || [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
     } catch (error) {
         console.error('Error fetching users:', error);
-        // If Users table doesn't exist, show empty list
         res.render('manager/users', {
             title: 'User Maintenance - Ella Rises',
             user: req.session.user,
             users: [],
-            messages: [{ type: 'error', text: 'Users table not found. Please create the Users table in the database.' }]
+            messages: [{ type: 'info', text: 'Database not connected. Users will appear here once the database is set up.' }]
         });
         req.session.messages = [];
     }
@@ -544,17 +785,30 @@ router.post('/users/:id/delete', requireAuth, requireManager, async (req, res) =
 // ============================================================================
 
 // Participants - public view, manager gets CRUD buttons
-router.get('/participants', async (req, res) => {
+router.get('/participants', requireAuth, async (req, res) => {
     const user = req.session.user || null;
     const isManager = user && user.role === 'manager';
     const viewPath = isManager ? 'manager/participants' : 'user/participants';
     
     try {
-        const participants = await db('Participants').select('*').orderBy('ParticipantID', 'desc');
+        // Get participants: People with Participant role + ParticipantDetails
+        const participants = await db('People')
+            .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
+            .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
+            .join('ParticipantDetails', 'People.PersonID', 'ParticipantDetails.PersonID')
+            .where('Roles.RoleName', 'Participant')
+            .select(
+                'People.*',
+                'ParticipantDetails.ParticipantSchoolOrEmployer',
+                'ParticipantDetails.ParticipantFieldOfInterest',
+                'ParticipantDetails.NewsLetter'
+            )
+            .orderBy('People.PersonID', 'desc');
+        
         res.render(viewPath, {
             title: 'Participants - Ella Rises',
             user: user,
-            participants: participants,
+            participants: participants || [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
@@ -564,7 +818,7 @@ router.get('/participants', async (req, res) => {
             title: 'Participants - Ella Rises',
             user: user,
             participants: [],
-            messages: [{ type: 'error', text: 'Error loading participants.' }]
+            messages: [{ type: 'info', text: 'Database not connected. Participants will appear here once the database is set up.' }]
         });
         req.session.messages = [];
     }
@@ -654,14 +908,22 @@ router.post('/participants/:id/delete', requireAuth, async (req, res) => {
 // EVENT ROUTES (View: public/common users, CRUD: manager only)
 // ============================================================================
 
-router.get('/events', async (req, res) => {
-    // View-only access for everyone (no login required)
+router.get('/events', requireAuth, async (req, res) => {
     const user = req.session.user || null;
     const isManager = user && user.role === 'manager';
     const viewPath = isManager ? 'manager/events' : 'user/events';
     
     try {
-        const events = await db('EventTemplates').select('*').orderBy('EventDate', 'asc');
+        // Get event occurrences (matching FInalTableCreation.sql schema)
+        const events = await db('EventOccurrences')
+            .join('EventTemplate', 'EventOccurrences.EventTemplateID', 'EventTemplate.EventTemplateID')
+            .select(
+                'EventOccurrences.*',
+                'EventTemplate.EventType',
+                'EventTemplate.EventDescription',
+                'EventTemplate.EventRecurrencePattern'
+            )
+            .orderBy('EventOccurrences.EventDateTimeStart', 'asc');
         res.render(viewPath, {
             title: 'Events - Ella Rises',
             user: user,
@@ -771,10 +1033,10 @@ router.get('/my-surveys', requireAuth, async (req, res) => {
         
         try {
             const surveys = await db('Surveys')
-                .join('Registrations', 'Surveys.RegistrationID', 'Registrations.RegistrationID')
-                .join('EventTemplates', 'Registrations.EventTemplateID', 'EventTemplates.EventTemplateID')
-                .where({ 'Registrations.ParticipantID': userId })
-                .select('Surveys.*', 'EventTemplates.EventName as eventName')
+                .join('EventRegistrations', 'Surveys.RegistrationID', 'EventRegistrations.RegistrationID')
+                .join('EventOccurrences', 'EventRegistrations.EventOccurrenceID', 'EventOccurrences.EventOccurrenceID')
+                .where({ 'EventRegistrations.PersonID': userId })
+                .select('Surveys.*', 'EventOccurrences.EventName as eventName')
                 .orderBy('Surveys.SurveySubmissionDate', 'desc');
             
             res.render('user/surveys', {
@@ -819,10 +1081,11 @@ router.get('/surveys', async (req, res) => {
     }
     
     try {
+        // Get all surveys (matching FInalTableCreation.sql schema)
         const surveys = await db('Surveys')
-            .join('Registrations', 'Surveys.RegistrationID', 'Registrations.RegistrationID')
-            .join('Participants', 'Registrations.ParticipantID', 'Participants.ParticipantID')
-            .select('Surveys.*', 'Participants.ParticipantFirstName', 'Participants.ParticipantLastName')
+            .join('EventRegistrations', 'Surveys.RegistrationID', 'EventRegistrations.RegistrationID')
+            .join('People', 'EventRegistrations.PersonID', 'People.PersonID')
+            .select('Surveys.*', 'People.FirstName', 'People.LastName')
             .orderBy('Surveys.SurveySubmissionDate', 'desc');
         res.render('manager/surveys', {
             title: 'Post-Event Surveys - Ella Rises',
@@ -934,21 +1197,34 @@ router.post('/surveys/:id/delete', requireAuth, async (req, res) => {
 // MILESTONE ROUTES (View: public/common users, CRUD: manager only)
 // ============================================================================
 
-router.get('/milestones', async (req, res) => {
-    // View-only access for everyone (no login required)
+router.get('/milestones', requireAuth, async (req, res) => {
     const user = req.session.user || null;
     const isManager = user && user.role === 'manager';
     const viewPath = isManager ? 'manager/milestones' : 'user/milestones';
     
     try {
-        const milestones = await db('Milestones')
-            .join('Participants', 'Milestones.ParticipantID', 'Participants.ParticipantID')
-            .select('Milestones.*', 'Participants.ParticipantFirstName', 'Participants.ParticipantLastName')
-            .orderBy('Milestones.MilestoneDate', 'desc');
+        let milestones;
+        
+        if (isManager) {
+            // Managers see all milestones (matching FInalTableCreation.sql schema)
+            milestones = await db('Milestones')
+                .join('People', 'Milestones.PersonID', 'People.PersonID')
+                .select('Milestones.*', 'People.FirstName', 'People.LastName')
+                .orderBy('Milestones.MilestoneDate', 'desc');
+        } else {
+            // Regular users see only their own milestones
+            const userId = user.id;
+            milestones = await db('Milestones')
+                .join('People', 'Milestones.PersonID', 'People.PersonID')
+                .where('Milestones.PersonID', userId)
+                .select('Milestones.*', 'People.FirstName', 'People.LastName')
+                .orderBy('Milestones.MilestoneDate', 'desc');
+        }
+        
         res.render(viewPath, {
             title: 'Milestones - Ella Rises',
             user: user,
-            milestones: milestones,
+            milestones: milestones || [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
@@ -958,7 +1234,7 @@ router.get('/milestones', async (req, res) => {
             title: 'Milestones - Ella Rises',
             user: user,
             milestones: [],
-            messages: [{ type: 'error', text: 'Error loading milestones.' }]
+            messages: [{ type: 'info', text: 'Database not connected. Milestones will appear here once the database is set up.' }]
         });
         req.session.messages = [];
     }
@@ -969,10 +1245,13 @@ router.get('/milestones/new', requireAuth, async (req, res) => {
         return res.status(403).send('Access denied.');
     }
     try {
-        // Fetch participants from database for 1-to-many relationship
-        const participants = await db('Participants')
-            .select('ParticipantID', 'ParticipantFirstName', 'ParticipantLastName')
-            .orderBy('ParticipantLastName', 'asc');
+        // Fetch participants from database (matching FInalTableCreation.sql schema)
+        const participants = await db('People')
+            .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
+            .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
+            .where('Roles.RoleName', 'Participant')
+            .select('People.PersonID', 'People.FirstName', 'People.LastName')
+            .orderBy('People.LastName', 'asc');
         
         res.render('manager/milestones-form', {
             title: 'Add New Milestone - Ella Rises',
@@ -1020,10 +1299,13 @@ router.get('/milestones/:id/edit', requireAuth, async (req, res) => {
             return res.redirect('/milestones');
         }
         
-        // Fetch participants for 1-to-many relationship
-        const participants = await db('Participants')
-            .select('ParticipantID', 'ParticipantFirstName', 'ParticipantLastName')
-            .orderBy('ParticipantLastName', 'asc');
+        // Fetch participants from database (matching FInalTableCreation.sql schema)
+        const participants = await db('People')
+            .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
+            .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
+            .where('Roles.RoleName', 'Participant')
+            .select('People.PersonID', 'People.FirstName', 'People.LastName')
+            .orderBy('People.LastName', 'asc');
         
         res.render('manager/milestones-form', {
             title: 'Edit Milestone - Ella Rises',
@@ -1152,21 +1434,22 @@ router.post('/donate', async (req, res) => {
 // DONATION MAINTENANCE ROUTES (View: public/common users, CRUD: manager only)
 // ============================================================================
 
-router.get('/donations', async (req, res) => {
-    // View-only access for everyone (no login required)
+router.get('/donations', requireAuth, async (req, res) => {
     const user = req.session.user || null;
     const isManager = user && user.role === 'manager';
     const viewPath = isManager ? 'manager/donations' : 'user/donations';
     
     try {
+        // Get donations with person info (matching FInalTableCreation.sql schema)
         const donations = await db('Donations')
-            .join('Participants', 'Donations.ParticipantID', 'Participants.ParticipantID')
-            .select('Donations.*', 'Participants.ParticipantFirstName', 'Participants.ParticipantLastName')
+            .join('People', 'Donations.PersonID', 'People.PersonID')
+            .select('Donations.*', 'People.FirstName', 'People.LastName')
             .orderBy('Donations.DonationDate', 'desc');
+        
         res.render(viewPath, {
             title: 'Donations - Ella Rises',
             user: user,
-            donations: donations,
+            donations: donations || [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
@@ -1176,7 +1459,7 @@ router.get('/donations', async (req, res) => {
             title: 'Donations - Ella Rises',
             user: user,
             donations: [],
-            messages: [{ type: 'error', text: 'Error loading donations.' }]
+            messages: [{ type: 'info', text: 'Database not connected. Donations will appear here once the database is set up.' }]
         });
         req.session.messages = [];
     }
@@ -1264,8 +1547,8 @@ router.post('/donations/:id/delete', requireAuth, async (req, res) => {
 // 404 Handler - Must be last route
 router.use((req, res) => {
     res.status(404).render('public/404', {
-        title: '404 - Page Not Found',
-        user: req.session.user || null
+        title: '404 - Page Not Found - Ella Rises',
+        user: req.session ? req.session.user : null
     });
 });
 

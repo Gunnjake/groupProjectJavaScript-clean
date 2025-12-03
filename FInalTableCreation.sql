@@ -22,7 +22,7 @@ CREATE TABLE People (
     FirstName     VARCHAR(30),
     LastName      VARCHAR(30),
     Birthdate     DATE,
-    PhoneNumber   VARCHAR(11),
+    PhoneNumber   VARCHAR(12),
     City          VARCHAR(20),
     Country       VARCHAR(50),
     State         VARCHAR(2),

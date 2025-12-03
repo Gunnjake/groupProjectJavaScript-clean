@@ -25,10 +25,28 @@
             </tr>
         </thead>
         <tbody id="participants-table-body">
-            <!-- Participants populated from database -->
-            <tr>
-                <td colspan="7" class="text-center" role="status" aria-live="polite">No participants found. Add a participant to get started.</td>
-            </tr>
+            <% if (typeof participants !== 'undefined' && participants.length > 0) { %>
+                <% participants.forEach(function(participant) { %>
+                    <tr>
+                        <td><%= participant.PersonID || participant.personid || participant.id %></td>
+                        <td><%= (participant.FirstName || participant.firstname || '') + ' ' + (participant.LastName || participant.lastname || '') %></td>
+                        <td><%= participant.Email || participant.email %></td>
+                        <td><%= participant.PhoneNumber || participant.phonenumber || participant.phone || 'N/A' %></td>
+                        <td>N/A</td>
+                        <td>N/A</td>
+                        <td>
+                            <a href="/participants/<%= participant.PersonID || participant.personid || participant.id %>/edit" class="btn btn-sm btn-secondary" aria-label="Edit participant">Edit</a>
+                            <form action="/participants/<%= participant.PersonID || participant.personid || participant.id %>/delete" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this participant?');" aria-label="Delete participant">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="7" class="text-center" role="status" aria-live="polite">No participants found. Add a participant to get started.</td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>

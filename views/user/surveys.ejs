@@ -25,27 +25,27 @@
                         <div>
                             <strong style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Satisfaction:</strong>
                             <span style="color: var(--coral); font-weight: 700; font-size: 1.25rem;">
-                                <%= survey.SatisfactionScore || survey.satisfaction_score || 'N/A' %>/5
+                                <%= survey.SurveySatisfactionScore || survey.surveysatisfactionscore || survey.SatisfactionScore || 'N/A' %>/5
                             </span>
                         </div>
                         <div>
                             <strong style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Usefulness:</strong>
                             <span style="color: var(--coral); font-weight: 700; font-size: 1.25rem;">
-                                <%= survey.UsefulnessScore || survey.usefulness_score || 'N/A' %>/5
+                                <%= survey.SurveyUsefulnessScore || survey.surveyusefulnessscore || survey.UsefulnessScore || 'N/A' %>/5
                             </span>
                         </div>
                         <div>
                             <strong style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Recommendation:</strong>
                             <span style="color: var(--coral); font-weight: 700; font-size: 1.25rem;">
-                                <%= survey.RecommendationScore || survey.recommendation_score || 'N/A' %>/5
+                                <%= survey.SurveyRecommendationScore || survey.surveyrecommendationscore || survey.RecommendationScore || 'N/A' %>/5
                             </span>
                         </div>
                     </div>
-                    <% if (survey.Comments || survey.comments) { %>
+                    <% if (survey.SurveyComments || survey.surveycomments || survey.Comments) { %>
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">
                             <strong style="color: var(--text-dark); display: block; margin-bottom: 0.5rem;">Your Comments:</strong>
                             <p style="margin: 0; color: var(--text-dark); font-size: 0.95rem; line-height: 1.6;">
-                                <%= survey.Comments || survey.comments %>
+                                <%= survey.SurveyComments || survey.surveycomments || survey.Comments %>
                             </p>
                         </div>
                     <% } %>

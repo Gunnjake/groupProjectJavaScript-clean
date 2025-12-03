@@ -1,0 +1,134 @@
+<%- include('../partials/header', { title: 'Newsletter Subscribers - Ella Rises', user: typeof user !== 'undefined' ? user : null }) %>
+
+<div class="page-header">
+    <h1>NEWSLETTER SUBSCRIBERS</h1>
+    <p>Manage newsletter subscriptions and copy email addresses</p>
+</div>
+
+<div class="container">
+    <div class="table-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <h2 style="margin: 0; color: var(--coral);">Subscribed Emails</h2>
+            <% if (typeof subscribers !== 'undefined' && subscribers.length > 0) { %>
+                <button id="copy-all-btn" class="btn btn-primary" type="button" aria-label="Copy all email addresses to clipboard">
+                    Copy All Emails
+                </button>
+            <% } %>
+        </div>
+
+        <% if (typeof messages !== 'undefined' && messages.length > 0) { %>
+            <div class="flash-messages" role="region" aria-live="polite">
+                <% messages.forEach(function(message) { %>
+                    <div class="flash-message flash-<%= message.type %>" role="alert">
+                        <%= message.text %>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+
+        <% if (typeof subscribers !== 'undefined' && subscribers.length > 0) { %>
+            <div style="margin-bottom: 1rem;">
+                <p style="color: var(--text-secondary);">
+                    Total subscribers: <strong><%= subscribers.length %></strong>
+                </p>
+            </div>
+
+            <div class="table-responsive" role="region" aria-label="Newsletter subscribers table">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Email</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Subscribed Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% subscribers.forEach(function(subscriber) { %>
+                            <tr>
+                                <td><%= subscriber.Email || subscriber.email %></td>
+                                <td>
+                                    <%= (subscriber.FirstName || subscriber.firstname || '') + ' ' + (subscriber.LastName || subscriber.lastname || '') %>
+                                </td>
+                                <td>N/A</td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Hidden textarea for copying emails -->
+            <textarea id="emails-textarea" style="position: absolute; left: -9999px; opacity: 0;" readonly aria-hidden="true"></textarea>
+        <% } else { %>
+            <div style="text-align: center; padding: 3rem 0;" role="status" aria-live="polite">
+                <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                    No newsletter subscribers found.
+                </p>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const copyAllBtn = document.getElementById('copy-all-btn');
+    const emailsTextarea = document.getElementById('emails-textarea');
+    
+    if (copyAllBtn && emailsTextarea) {
+        copyAllBtn.addEventListener('click', function() {
+            // Get all email addresses from the table
+            const emailCells = document.querySelectorAll('.data-table tbody td:first-child');
+            const emails = Array.from(emailCells).map(cell => cell.textContent.trim()).filter(email => email);
+            
+            if (emails.length === 0) {
+                alert('No email addresses found.');
+                return;
+            }
+            
+            // Join emails with comma and space
+            const emailsText = emails.join(', ');
+            
+            // Copy to clipboard
+            emailsTextarea.value = emailsText;
+            emailsTextarea.select();
+            emailsTextarea.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                
+                // Update button text temporarily
+                const originalText = copyAllBtn.textContent;
+                copyAllBtn.textContent = 'Copied!';
+                copyAllBtn.style.backgroundColor = 'var(--success-green)';
+                
+                setTimeout(function() {
+                    copyAllBtn.textContent = originalText;
+                    copyAllBtn.style.backgroundColor = '';
+                }, 2000);
+            } catch (err) {
+                // Fallback: use Clipboard API if available
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(emailsText).then(function() {
+                        const originalText = copyAllBtn.textContent;
+                        copyAllBtn.textContent = 'Copied!';
+                        copyAllBtn.style.backgroundColor = 'var(--success-green)';
+                        
+                        setTimeout(function() {
+                            copyAllBtn.textContent = originalText;
+                            copyAllBtn.style.backgroundColor = '';
+                        }, 2000);
+                    }).catch(function(err) {
+                        console.error('Failed to copy:', err);
+                        alert('Failed to copy emails. Please try again.');
+                    });
+                } else {
+                    // Last resort: show emails in alert
+                    alert('Copy functionality not available. Emails:\n\n' + emailsText);
+                }
+            }
+        });
+    }
+});
+</script>
+
+<%- include('../partials/footer') %>
+

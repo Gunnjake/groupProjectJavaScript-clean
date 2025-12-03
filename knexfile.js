@@ -1,20 +1,29 @@
-// Knex config - DB connection settings for dev and production
-// AWS RDS environment variables are automatically provided by Elastic Beanstalk
+// Knex config - DB connection settings using AWS RDS variables
 
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Always load .env from project root
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+// Validate required environment variables
+const requiredVars = ['RDS_HOSTNAME', 'RDS_DB_NAME', 'RDS_USERNAME', 'RDS_PASSWORD'];
+const missingVars = requiredVars.filter(v => !process.env[v]);
+if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+}
 
 module.exports = {
   development: {
     client: 'postgresql',
     connection: {
-      // Use RDS variables if available (for AWS), otherwise fall back to custom DB_ vars or localhost
-      host: process.env.RDS_HOSTNAME || process.env.DB_HOST || 'localhost',
-      port: process.env.RDS_PORT || process.env.DB_PORT || 5432,
-      database: process.env.RDS_DB_NAME || process.env.DB_NAME || 'ellarises',
-      user: process.env.RDS_USERNAME || process.env.DB_USER || 'postgres',
-      password: process.env.RDS_PASSWORD || process.env.DB_PASSWORD || '',
-      // Enable SSL if RDS variables are present (AWS RDS requires SSL)
-      ssl: (process.env.RDS_HOSTNAME) ? { rejectUnauthorized: false } : false
+      host: process.env.RDS_HOSTNAME,
+      port: parseInt(process.env.RDS_PORT) || 5432,
+      database: process.env.RDS_DB_NAME,
+      user: process.env.RDS_USERNAME,
+      password: process.env.RDS_PASSWORD,
+      ssl: { rejectUnauthorized: false },
+      connectTimeout: 10000
     },
     pool: {
       min: 2,
@@ -22,22 +31,22 @@ module.exports = {
     },
     migrations: {
       tableName: 'knex_migrations'
-    }
+    },
+    // PostgreSQL converts unquoted identifiers to lowercase
+    // Since tables were created without quotes, use lowercase names
+    wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase())
   },
 
   production: {
     client: 'postgresql',
     connection: {
-      // AWS RDS variables take priority, fall back to custom DB_ variables
-      host: process.env.RDS_HOSTNAME || process.env.DB_HOST,
-      port: process.env.RDS_PORT || process.env.DB_PORT || 5432,
-      database: process.env.RDS_DB_NAME || process.env.DB_NAME,
-      user: process.env.RDS_USERNAME || process.env.DB_USER,
-      password: process.env.RDS_PASSWORD || process.env.DB_PASSWORD,
-      // AWS RDS requires SSL - enable it if RDS_HOSTNAME is present or DB_SSL is true
-      ssl: (process.env.RDS_HOSTNAME || process.env.DB_SSL === 'true') 
-        ? { rejectUnauthorized: false } 
-        : false
+      host: process.env.RDS_HOSTNAME,
+      port: parseInt(process.env.RDS_PORT) || 5432,
+      database: process.env.RDS_DB_NAME,
+      user: process.env.RDS_USERNAME,
+      password: process.env.RDS_PASSWORD,
+      ssl: { rejectUnauthorized: false },
+      connectTimeout: 10000
     },
     pool: {
       min: 2,
@@ -45,7 +54,9 @@ module.exports = {
     },
     migrations: {
       tableName: 'knex_migrations'
-    }
+    },
+    // PostgreSQL converts unquoted identifiers to lowercase
+    wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase())
   }
 };
 

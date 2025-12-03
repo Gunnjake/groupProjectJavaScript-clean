@@ -25,10 +25,32 @@
             </tr>
         </thead>
         <tbody id="donations-table-body">
-            <!-- Donations populated from database -->
-            <tr>
-                <td colspan="7" class="text-center" role="status" aria-live="polite">No donations found. Add a donation to get started.</td>
-            </tr>
+            <% if (typeof donations !== 'undefined' && donations.length > 0) { %>
+                <% donations.forEach(function(donation) { %>
+                    <tr>
+                        <td><%= donation.DonationID || donation.donationid || donation.id %></td>
+                        <td>
+                            <%= (donation.FirstName || donation.firstname || donation.firstName || '') + ' ' + (donation.LastName || donation.lastname || donation.lastName || '') %>
+                        </td>
+                        <td>N/A</td>
+                        <td>$<%= parseFloat(donation.DonationAmount || donation.donationamount || donation.amount || 0).toFixed(2) %></td>
+                        <td>N/A</td>
+                        <td>
+                            <%= donation.DonationDate ? new Date(donation.DonationDate).toLocaleDateString() : (donation.donationdate ? new Date(donation.donationdate).toLocaleDateString() : 'N/A') %>
+                        </td>
+                        <td>
+                            <a href="/donations/<%= donation.DonationID || donation.donationid || donation.id %>/edit" class="btn btn-sm btn-secondary" aria-label="Edit donation">Edit</a>
+                            <form action="/donations/<%= donation.DonationID || donation.donationid || donation.id %>/delete" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this donation?');" aria-label="Delete donation">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="7" class="text-center" role="status" aria-live="polite">No donations found. Add a donation to get started.</td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>
