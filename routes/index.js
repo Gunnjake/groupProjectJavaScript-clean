@@ -407,10 +407,17 @@ router.post('/test-login-query', async (req, res) => {
             ? '✓ Password matches! Login would succeed.' 
             : '✗ Password does not match. Login would fail.';
 
+        // Raw database output (hide password for security)
+        const rawOutput = { ...user };
+        if (rawOutput.RolePassword) {
+            rawOutput.RolePassword = '***HIDDEN***';
+        }
+
         res.render('test/query-test', {
             title: 'Query Testing - Ella Rises',
             user: req.session.user || null,
             loginResult: result,
+            rawOutput: rawOutput,
             testEmail: sEmail
         });
 

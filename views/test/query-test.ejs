@@ -18,8 +18,16 @@
         
         <% if (typeof loginResult !== 'undefined' && loginResult) { %>
             <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f5f5f5; border-radius: 6px;">
-                <h3 style="margin-bottom: 1rem; color: var(--coral);">Query Result:</h3>
+                <h3 style="margin-bottom: 1rem; color: var(--coral);">Formatted Query Result:</h3>
                 <pre style="background: white; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.9rem; line-height: 1.6;"><%= JSON.stringify(loginResult, null, 2) %></pre>
+            </div>
+        <% } %>
+        
+        <% if (typeof rawOutput !== 'undefined' && rawOutput) { %>
+            <div style="margin-bottom: 2rem; padding: 1.5rem; background: #e8f4f8; border-radius: 6px; border: 2px solid #4a90e2;">
+                <h3 style="margin-bottom: 1rem; color: #4a90e2;">Raw Database Output:</h3>
+                <p style="margin-bottom: 0.5rem; color: #666; font-size: 0.9rem;">This is the exact data returned from the database query:</p>
+                <pre style="background: white; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.9rem; line-height: 1.6; border: 1px solid #4a90e2;"><%= JSON.stringify(rawOutput, null, 2) %></pre>
             </div>
         <% } %>
         
