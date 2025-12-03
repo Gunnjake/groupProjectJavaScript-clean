@@ -5,7 +5,10 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { requireAuth, requireManager } = require('../middleware/auth');
-const db = require('../db');
+const knex = require('knex');
+const knexConfig = require('../knexfile');
+const environment = process.env.NODE_ENV || 'development';
+const knexInstance = knex(knexConfig[environment]);
 
 
 // ============================================================================
@@ -26,7 +29,7 @@ router.get('/health', (req, res) => {
 router.get('/', async (req, res) => {
     try {
         // Get upcoming event occurrences (matching FInalTableCreation.sql schema)
-        const events = await db('EventOccurrences')
+        const events = await knexInstance('EventOccurrences')
             .join('EventTemplate', 'EventOccurrences.EventTemplateID', 'EventTemplate.EventTemplateID')
             .select(
                 'EventOccurrences.EventOccurrenceID as event_id',
@@ -317,7 +320,7 @@ router.get('/test-login-query', async (req, res) => {
     let queryError = null;
 
     try {
-        const data = await db('people').select('*');
+        const data = await knexInstance('people').select('*');
         queryResult = JSON.stringify(data, null, 2);
     } catch (err) {
         queryError = err.message || "Unknown error";
@@ -338,7 +341,7 @@ router.post('/test-login-query', async (req, res) => {
 
     try {
         // Run the same unified login query
-        const userData = await db.raw(`
+        const userData = await knexInstance.raw(`
             SELECT 
                 p.PersonID,
                 p.Email,
@@ -419,18 +422,47 @@ router.post('/test-login-query', async (req, res) => {
             ? '✓ Password matches! Login would succeed.' 
             : '✗ Password does not match. Login would fail.';
 
-        // Raw database output (hide password for security)
+        // Raw database output - show everything including password for testing
         const rawOutput = { ...user };
-        if (rawOutput.RolePassword) {
-            rawOutput.RolePassword = '***HIDDEN***';
-        }
+        
+        // Also show the actual SQL query with variables substituted
+        const actualQuery = `
+            SELECT 
+                p.PersonID,
+                p.Email,
+                p.FirstName,
+                p.LastName,
+                r.RoleID,
+                r.RoleName,
+                CASE 
+                    WHEN r.RoleID = 1 THEN ad.Password
+                    WHEN r.RoleID = 2 THEN vd.Password
+                    WHEN r.RoleID = 3 THEN pd.Password
+                END AS RolePassword,
+                ad.AdminRole,
+                ad.Salary,
+                vd.VolunteerRole,
+                pd.ParticipantSchoolOrEmployer,
+                pd.ParticipantFieldOfInterest,
+                pd.NewsLetter
+            FROM People p
+            JOIN PeopleRoles pr ON p.PersonID = pr.PersonID
+            JOIN Roles r ON pr.RoleID = r.RoleID
+            LEFT JOIN AdminDetails ad ON p.PersonID = ad.PersonID AND r.RoleID = 1
+            LEFT JOIN VolunteerDetails vd ON p.PersonID = vd.PersonID AND r.RoleID = 2
+            LEFT JOIN ParticipantDetails pd ON p.PersonID = pd.PersonID AND r.RoleID = 3
+            WHERE p.Email = '${sEmail}'
+            LIMIT 1
+        `;
 
         res.render('test/query-test', {
             title: 'Query Testing - Ella Rises',
             user: req.session.user || null,
             loginResult: result,
             rawOutput: rawOutput,
-            testEmail: sEmail
+            actualQuery: actualQuery,
+            testEmail: sEmail,
+            testPassword: sPassword
         });
 
     } catch (err) {
@@ -451,7 +483,7 @@ router.post('/login', async (req, res) => {
 
     try {
         // Single query using COALESCE to get password from appropriate detail table
-        const user = await db('people')
+        const user = await knexInstance('people')
             .select(
                 'people.personid',
                 'people.email',
@@ -460,7 +492,7 @@ router.post('/login', async (req, res) => {
                 'roles.roleid',
                 'roles.rolename',
                 // COALESCE takes the first non-null value from the three detail tables
-                db.raw('COALESCE(admindetails.password, volunteerdetails.password, participantdetails.password) as stored_password'),
+                knexInstance.raw('COALESCE(admindetails.password, volunteerdetails.password, participantdetails.password) as stored_password'),
                 'admindetails.adminrole',
                 'admindetails.salary',
                 'volunteerdetails.volunteerrole',
@@ -659,14 +691,14 @@ router.get('/dashboard', requireAuth, async (req, res) => {
         } else {
             // User sees their registrations and surveys (matching FInalTableCreation.sql schema)
             try {
-                const registrations = await db('EventRegistrations')
+                const registrations = await knexInstance('EventRegistrations')
                     .join('EventOccurrences', 'EventRegistrations.EventOccurrenceID', 'EventOccurrences.EventOccurrenceID')
                     .join('EventTemplate', 'EventOccurrences.EventTemplateID', 'EventTemplate.EventTemplateID')
                     .where({ 'EventRegistrations.PersonID': userId })
                     .select('EventTemplate.EventName as program', 'EventRegistrations.RegistrationCreatedAt as registrationDate')
                     .orderBy('EventRegistrations.RegistrationCreatedAt', 'desc');
                 
-                const surveys = await db('Surveys')
+                const surveys = await knexInstance('Surveys')
                     .join('EventRegistrations', 'Surveys.RegistrationID', 'EventRegistrations.RegistrationID')
                     .join('EventOccurrences', 'EventRegistrations.EventOccurrenceID', 'EventOccurrences.EventOccurrenceID')
                     .where({ 'EventRegistrations.PersonID': userId })
@@ -713,7 +745,7 @@ router.get('/newsletter', requireAuth, requireManager, async (req, res) => {
     try {
         // Get newsletter subscribers from ParticipantDetails (matching FInalTableCreation.sql schema)
         // NewsLetter field is 1 for subscribed, 0 for not subscribed
-        const subscribers = await db('ParticipantDetails')
+        const subscribers = await knexInstance('ParticipantDetails')
             .join('People', 'ParticipantDetails.PersonID', 'People.PersonID')
             .where('ParticipantDetails.NewsLetter', 1)
             .select(
@@ -747,13 +779,13 @@ router.get('/users', requireAuth, requireManager, async (req, res) => {
     try {
         // Get all people with their roles (matching FInalTableCreation.sql schema)
         // For PostgreSQL, we'll get people and their roles separately
-        const people = await db('People')
+        const people = await knexInstance('People')
             .select('*')
             .orderBy('People.PersonID', 'desc');
         
         // Get roles for each person
         const users = await Promise.all(people.map(async (person) => {
-            const roles = await db('PeopleRoles')
+            const roles = await knexInstance('PeopleRoles')
                 .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
                 .where('PeopleRoles.PersonID', person.PersonID || person.personid)
                 .select('Roles.RoleName');
@@ -809,7 +841,7 @@ router.post('/users/new', requireAuth, requireManager, async (req, res) => {
         const saltRounds = 10;
         const password_hash = await bcrypt.hash(password, saltRounds);
         
-        await db('Users').insert({
+        await knexInstance('Users').insert({
             username,
             email,
             password_hash,
@@ -830,7 +862,7 @@ router.post('/users/new', requireAuth, requireManager, async (req, res) => {
 router.get('/users/:id/edit', requireAuth, requireManager, async (req, res) => {
     const { id } = req.params;
     try {
-        const userData = await db('Users').where({ userid: id }).first();
+        const userData = await knexInstance('Users').where({ userid: id }).first();
         if (!userData) {
             req.session.messages = [{ type: 'error', text: 'User not found.' }];
             return res.redirect('/users');
@@ -876,7 +908,7 @@ router.post('/users/:id/update', requireAuth, requireManager, async (req, res) =
             updateData.password_hash = await bcrypt.hash(password, saltRounds);
         }
         
-        await db('Users').where({ userid: id }).update(updateData);
+        await knexInstance('Users').where({ userid: id }).update(updateData);
         
         req.session.messages = [{ type: 'success', text: 'User updated successfully' }];
         res.redirect('/users');
@@ -890,7 +922,7 @@ router.post('/users/:id/update', requireAuth, requireManager, async (req, res) =
 router.post('/users/:id/delete', requireAuth, requireManager, async (req, res) => {
     const { id } = req.params;
     try {
-        await db('Users').where({ userid: id }).del();
+        await knexInstance('Users').where({ userid: id }).del();
         req.session.messages = [{ type: 'success', text: 'User deleted successfully' }];
         res.redirect('/users');
     } catch (error) {
@@ -912,7 +944,7 @@ router.get('/participants', requireAuth, async (req, res) => {
     
     try {
         // Get participants: People with Participant role + ParticipantDetails
-        const participants = await db('People')
+        const participants = await knexInstance('People')
             .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
             .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
             .join('ParticipantDetails', 'People.PersonID', 'ParticipantDetails.PersonID')
@@ -1035,7 +1067,7 @@ router.get('/events', requireAuth, async (req, res) => {
     
     try {
         // Get event occurrences (matching FInalTableCreation.sql schema)
-        const events = await db('EventOccurrences')
+        const events = await knexInstance('EventOccurrences')
             .join('EventTemplate', 'EventOccurrences.EventTemplateID', 'EventTemplate.EventTemplateID')
             .select(
                 'EventOccurrences.*',
@@ -1152,7 +1184,7 @@ router.get('/my-surveys', requireAuth, async (req, res) => {
         const userId = req.session.user.id;
         
         try {
-            const surveys = await db('Surveys')
+            const surveys = await knexInstance('Surveys')
                 .join('EventRegistrations', 'Surveys.RegistrationID', 'EventRegistrations.RegistrationID')
                 .join('EventOccurrences', 'EventRegistrations.EventOccurrenceID', 'EventOccurrences.EventOccurrenceID')
                 .where({ 'EventRegistrations.PersonID': userId })
@@ -1202,7 +1234,7 @@ router.get('/surveys', async (req, res) => {
     
     try {
         // Get all surveys (matching FInalTableCreation.sql schema)
-        const surveys = await db('Surveys')
+        const surveys = await knexInstance('Surveys')
             .join('EventRegistrations', 'Surveys.RegistrationID', 'EventRegistrations.RegistrationID')
             .join('People', 'EventRegistrations.PersonID', 'People.PersonID')
             .select('Surveys.*', 'People.FirstName', 'People.LastName')
@@ -1327,14 +1359,14 @@ router.get('/milestones', requireAuth, async (req, res) => {
         
         if (isManager) {
             // Managers see all milestones (matching FInalTableCreation.sql schema)
-            milestones = await db('Milestones')
+            milestones = await knexInstance('Milestones')
                 .join('People', 'Milestones.PersonID', 'People.PersonID')
                 .select('Milestones.*', 'People.FirstName', 'People.LastName')
                 .orderBy('Milestones.MilestoneDate', 'desc');
         } else {
             // Regular users see only their own milestones
             const userId = user.id;
-            milestones = await db('Milestones')
+            milestones = await knexInstance('Milestones')
                 .join('People', 'Milestones.PersonID', 'People.PersonID')
                 .where('Milestones.PersonID', userId)
                 .select('Milestones.*', 'People.FirstName', 'People.LastName')
@@ -1366,7 +1398,7 @@ router.get('/milestones/new', requireAuth, async (req, res) => {
     }
     try {
         // Fetch participants from database (matching FInalTableCreation.sql schema)
-        const participants = await db('People')
+        const participants = await knexInstance('People')
             .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
             .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
             .where('Roles.RoleName', 'Participant')
@@ -1412,7 +1444,7 @@ router.get('/milestones/:id/edit', requireAuth, async (req, res) => {
     }
     const { id } = req.params;
     try {
-        const milestoneData = await db('Milestones').where({ MilestoneID: id }).first();
+        const milestoneData = await knexInstance('Milestones').where({ MilestoneID: id }).first();
         
         if (!milestoneData) {
             req.session.messages = [{ type: 'error', text: 'Milestone not found.' }];
@@ -1420,7 +1452,7 @@ router.get('/milestones/:id/edit', requireAuth, async (req, res) => {
         }
         
         // Fetch participants from database (matching FInalTableCreation.sql schema)
-        const participants = await db('People')
+        const participants = await knexInstance('People')
             .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
             .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
             .where('Roles.RoleName', 'Participant')
@@ -1561,7 +1593,7 @@ router.get('/donations', requireAuth, async (req, res) => {
     
     try {
         // Get donations with person info (matching FInalTableCreation.sql schema)
-        const donations = await db('Donations')
+        const donations = await knexInstance('Donations')
             .join('People', 'Donations.PersonID', 'People.PersonID')
             .select('Donations.*', 'People.FirstName', 'People.LastName')
             .orderBy('Donations.DonationDate', 'desc');

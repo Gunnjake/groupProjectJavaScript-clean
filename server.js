@@ -61,8 +61,11 @@ async function testDatabaseConnection() {
             return;
         }
         
-        const db = require('./db');
-        const connectionPromise = db.raw('SELECT 1');
+        const knex = require('knex');
+        const knexConfig = require('./knexfile');
+        const environment = process.env.NODE_ENV || 'development';
+        const knexInstance = knex(knexConfig[environment]);
+        const connectionPromise = knexInstance.raw('SELECT 1');
         const timeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Connection timeout')), 5000)
         );
