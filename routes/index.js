@@ -7,9 +7,6 @@ const bcrypt = require('bcryptjs');
 const { requireAuth, requireManager } = require('../middleware/auth');
 const db = require('../db');
 
-// Email transporter - imported from utils module
-const transporter = require('../utils/email');
-const nodemailer = require("nodemailer");
 
 // ============================================================================
 // PUBLIC ROUTES
