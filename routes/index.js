@@ -314,138 +314,88 @@ router.get('/login', (req, res) => {
     res.render('auth/login', {
         title: 'Login - Ella Rises',
         error: req.query.error || null,
+        error_message: req.query.error_message || null,
         user: null
     });
 });
 
-// Login form submission
+// Test login page
+router.get('/test-login', (req, res) => {
+    res.send(`
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+        <div class="container mt-5" style="max-width: 500px;">
+            <h3 class="mb-4 text-center">Test Login</h3>
+            <form method="POST" action="/login">
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input class="form-control" type="text" name="username" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input class="form-control" type="password" name="password" required />
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Log In</button>
+            </form>
+        </div>
+    `);
+});
+
+// Login form submission - plain text password comparison
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    
-    if (!username) {
-        return res.render('auth/login', {
-            title: 'Login - Ella Rises',
-            error: 'Please provide your username',
-            user: null
-        });
-    }
-    
+    const sEmail = req.body.username;
+    const sPassword = req.body.password;
+
     try {
-        // Database authentication - matching FInalTableCreation.sql schema
-        try {
-            // Find person by email (username can be email)
-            const person = await db('People')
-                .where({ Email: username })
-                .orWhere({ email: username })
-                .first();
-                
-            if (!person) {
-                return res.render('auth/login', {
-                    title: 'Login - Ella Rises',
-                    error: 'Invalid email address',
-                    user: null
-                });
-            }
-            
-            const personId = person.PersonID || person.personid || person.id;
-            
-            // Get person's roles from PeopleRoles junction table
-            const personRoles = await db('PeopleRoles')
-                .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
-                .where({ PersonID: personId })
-                .select('Roles.RoleName');
-            
-            // Determine user role and get password from appropriate detail table
-            let userRole = 'user'; // default
-            let passwordHash = null;
-            let detailRecord = null;
-            
-            // Check for Admin role first (highest priority)
-            const isAdmin = personRoles.some(r => (r.RoleName || r.rolename || '').toLowerCase() === 'admin');
-            if (isAdmin) {
-                userRole = 'manager';
-                detailRecord = await db('AdminDetails').where({ PersonID: personId }).first();
-                if (detailRecord) {
-                    passwordHash = detailRecord.Password || detailRecord.password;
-                }
-            } else {
-                // Check for Participant role
-                const isParticipant = personRoles.some(r => (r.RoleName || r.rolename || '').toLowerCase() === 'participant');
-                if (isParticipant) {
-                    userRole = 'user';
-                    detailRecord = await db('ParticipantDetails').where({ PersonID: personId }).first();
-                    if (detailRecord) {
-                        passwordHash = detailRecord.Password || detailRecord.password;
-                    }
-                } else {
-                    // Check for Volunteer role
-                    const isVolunteer = personRoles.some(r => (r.RoleName || r.rolename || '').toLowerCase() === 'volunteer');
-                    if (isVolunteer) {
-                        userRole = 'user';
-                        detailRecord = await db('VolunteerDetails').where({ PersonID: personId }).first();
-                        if (detailRecord) {
-                            passwordHash = detailRecord.Password || detailRecord.password;
-                        }
-                    }
-                }
-            }
-            
-            // Check if user has a password set
-            if (!passwordHash || (typeof passwordHash === 'string' && passwordHash.trim() === '')) {
-                // User exists but has no password - redirect to password setup
-                req.session.setupPasswordUserId = personId;
-                req.session.setupPasswordUsername = person.Email || person.email;
-                req.session.setupPasswordEmail = person.Email || person.email;
-                return res.redirect('/setup-password');
-            }
-            
-            // User has a password - verify it
-            if (!password) {
-                return res.render('auth/login', {
-                    title: 'Login - Ella Rises',
-                    error: 'Please provide your password',
-                    user: null
-                });
-            }
-            
-            const validPassword = await bcrypt.compare(password, passwordHash);
-            if (!validPassword) {
-                return res.render('auth/login', {
-                    title: 'Login - Ella Rises',
-                    error: 'Invalid password',
-                    user: null
-                });
-            }
-            
-            req.session.user = {
-                id: personId,
-                username: person.Email || person.email,
-                role: userRole,
-                email: person.Email || person.email,
-                firstName: person.FirstName || person.firstname,
-                lastName: person.LastName || person.lastname
-            };
-            
-            const returnTo = req.session.returnTo || '/dashboard';
-            delete req.session.returnTo;
-            res.redirect(returnTo);
-        } catch (dbError) {
-            // Database error - show error message
-            console.error('Database authentication error:', dbError.message);
-            return res.render('auth/login', {
-                title: 'Login - Ella Rises',
-                error: 'Database connection error. Please try again later.',
-                user: null
-            });
+        const userRoleData = await db('people')
+            .join('peopleroles', 'people.email', 'peopleroles.email')
+            .join('roles', 'peopleroles.roleid', 'roles.roleid')
+            .select('people.email', 'roles.roleid', 'roles.rolename')
+            .where('people.email', sEmail)
+            .first();
+
+        if (!userRoleData) {
+            return res.render("login", { error_message: "User not found" });
         }
-        
-    } catch (error) {
-        console.error('Login error:', error);
-        res.render('auth/login', {
-            title: 'Login - Ella Rises',
-            error: 'An error occurred during login. Please try again.',
-            user: null
-        });
+
+        const roleName = userRoleData.rolename;
+        let validUser = null;
+
+        switch (roleName) {
+            case 'Admin':
+                validUser = await db('admindetails')
+                    .select('email', 'username')
+                    .where({ email: sEmail, passwordhash: sPassword })
+                    .first();
+                break;
+
+            case 'Volunteer':
+                validUser = await db('volunteerdetails')
+                    .select('email', 'username')
+                    .where({ email: sEmail, passwordhash: sPassword })
+                    .first();
+                break;
+
+            case 'Participant':
+                return res.render("login", { error_message: "Participants cannot login." });
+
+            default:
+                return res.render("login", { error_message: "Invalid role assignment." });
+        }
+
+        if (validUser) {
+            req.session.isLoggedIn = true;
+            req.session.username = validUser.email;
+            req.session.role = roleName;
+
+            return res.redirect("/");
+        } else {
+            return res.render("login", { error_message: "Invalid password" });
+        }
+
+    } catch (err) {
+        console.error("Login error:", err);
+        return res.render("login", { error_message: "System error during login" });
     }
 });
 

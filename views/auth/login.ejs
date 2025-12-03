@@ -13,6 +13,11 @@
             <%= error %>
         </div>
     <% } %>
+    <% if (typeof error_message !== 'undefined' && error_message) { %>
+        <div class="flash-message flash-error">
+            <%= error_message %>
+        </div>
+    <% } %>
 
     <!-- Login form -->
     <form action="/login" method="POST" aria-label="Login form">
