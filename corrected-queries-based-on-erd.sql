@@ -2,61 +2,69 @@
 -- CORRECTED SQL QUERIES BASED ON ERD
 -- ============================================================================
 -- This file contains corrected SQL queries matching the ERD structure
--- Review these queries before updating routes/index.js
+-- ERD Structure: People -> PeopleRoles -> Roles
+--                People -> ParticipantDetails/VolunteerDetails/AdminDetails (1:1)
+--                People -> Milestones, Donations, EventRegistrations (1:many)
+--                EventTemplate -> EventOccurrences -> EventRegistrations
+--                EventRegistrations -> Surveys (1:1)
 -- ============================================================================
 
 -- ============================================================================
 -- 1. GET UPCOMING EVENTS (Homepage)
 -- ============================================================================
--- ERD shows: Events table with EventID, EventName, EventType, EventDescription, 
---            EventDate, EventTime, EventLocation, EventCapacity
--- Current code uses: EventOccurrences + EventTemplate
+-- ERD shows: EventTemplate -> EventOccurrences
+--            EventOccurrences: EventOccurrenceID, EventName, EventDateTimeStart, 
+--            EventDateTimeEnd, EventLocation, EventCapacity, EventRegistrationDeadline
 -- CORRECTED:
 
 SELECT 
-    e.EventID as event_id,
-    e.EventName as event_name,
-    e.EventDate as event_date,
-    e.EventTime as event_time,
-    e.EventLocation as location,
-    e.EventDescription as description,
-    e.EventType as event_type,
-    e.EventCapacity as capacity
-FROM Events e
-WHERE e.EventDate >= CURRENT_DATE
-ORDER BY e.EventDate ASC, e.EventTime ASC
+    eo.EventOccurrenceID as event_id,
+    eo.EventName as event_name,
+    eo.EventDateTimeStart as event_date,
+    eo.EventLocation as location,
+    eo.EventDescription as description,
+    et.EventType as event_type,
+    eo.EventCapacity as capacity
+FROM EventOccurrences eo
+INNER JOIN EventTemplate et ON eo.EventTemplateID = et.EventTemplateID
+WHERE eo.EventDateTimeStart >= CURRENT_TIMESTAMP
+ORDER BY eo.EventDateTimeStart ASC
 LIMIT 5;
 
 -- ============================================================================
 -- 2. GET USER REGISTRATIONS (Dashboard)
 -- ============================================================================
--- ERD shows: EventRegistrations with EventID (not EventOccurrenceID)
---            EventEnrollment, RegistrationDate, RegistrationStatus, 
---            RegistrationAmountPaid, RegistrationAmountDue
+-- ERD shows: EventRegistrations with EventOccurrenceID (FK), PersonID (FK)
+--            RegistrationStatus, RegistrationAttendedFlag, RegistrationCheckInTime, 
+--            RegistrationCreationAt
 -- CORRECTED:
 
 SELECT 
     er.RegistrationID,
-    er.RegistrationDate,
+    er.RegistrationCreationAt as RegistrationDate,
     er.RegistrationStatus,
-    er.EventEnrollment,
-    er.RegistrationAmountPaid,
-    er.RegistrationAmountDue,
-    e.EventName,
-    e.EventType,
-    e.EventDate,
-    e.EventTime,
-    e.EventLocation
+    er.RegistrationAttendedFlag,
+    er.RegistrationCheckInTime,
+    eo.EventOccurrenceID,
+    eo.EventName,
+    eo.EventDateTimeStart,
+    eo.EventDateTimeEnd,
+    eo.EventLocation,
+    et.EventType
 FROM EventRegistrations er
-INNER JOIN Events e ON er.EventID = e.EventID
-WHERE er.PeopleID = :userId
-ORDER BY er.RegistrationDate DESC;
+INNER JOIN EventOccurrences eo ON er.EventOccurrenceID = eo.EventOccurrenceID
+INNER JOIN EventTemplate et ON eo.EventTemplateID = et.EventTemplateID
+WHERE er.PersonID = :userId
+ORDER BY er.RegistrationCreationAt DESC;
 
 -- ============================================================================
 -- 3. GET USER SURVEYS (Dashboard)
 -- ============================================================================
--- ERD shows: Surveys linked to RegistrationID
--- CORRECTED (assuming Surveys table exists with RegistrationID FK):
+-- ERD shows: Surveys linked to RegistrationID (FK)
+--            SurveySatisfactionScore, SurveyUsefulnessScore, SurveyInstructorScore,
+--            SurveyRecommendationScore, SurveyOverallScore, SurveyNPSBucket,
+--            SurveyComments, SurveySubmissionDate
+-- CORRECTED:
 
 SELECT 
     s.SurveyID,
@@ -68,88 +76,85 @@ SELECT
     s.SurveyNPSBucket,
     s.SurveyComments,
     s.SurveySubmissionDate,
-    e.EventName as eventName
+    eo.EventName as eventName
 FROM Surveys s
 INNER JOIN EventRegistrations er ON s.RegistrationID = er.RegistrationID
-INNER JOIN Events e ON er.EventID = e.EventID
-WHERE er.PeopleID = :userId
+INNER JOIN EventOccurrences eo ON er.EventOccurrenceID = eo.EventOccurrenceID
+WHERE er.PersonID = :userId
 ORDER BY s.SurveySubmissionDate DESC;
 
 -- ============================================================================
 -- 4. GET ALL PARTICIPANTS (Manager View)
 -- ============================================================================
--- ERD shows: ParticipantDetails with ParticipantID (PK), 
---            ParticipantFirstName, ParticipantLastName, Password, MobileNo
---            Note: ERD shows ParticipantDetails as separate table, not linked to People
+-- ERD shows: People -> ParticipantDetails (1:1 via PersonID)
+--            ParticipantDetails: PersonID (PK/FK), ParticipantSchoolOrEmployer,
+--            ParticipantFieldOfInterest, Password, NewsLetter
 -- CORRECTED:
 
--- Option A: If ParticipantDetails is separate (as ERD shows):
 SELECT 
-    pd.ParticipantID,
-    pd.ParticipantFirstName as FirstName,
-    pd.ParticipantLastName as LastName,
-    pd.MobileNo as PhoneNumber,
-    pd.Password
-FROM ParticipantDetails pd
-ORDER BY pd.ParticipantID DESC;
-
--- Option B: If ParticipantDetails links to People (more likely):
-SELECT 
-    p.PeopleID,
+    p.PersonID,
+    p.Email,
     p.FirstName,
     p.LastName,
-    p.Email,
+    p.Birthdate,
     p.PhoneNumber,
     p.City,
+    p.Country,
     p.State,
     p.Zip,
-    pd.ParticipantFirstName,
-    pd.ParticipantLastName,
-    pd.MobileNo,
-    pd.Password
+    pd.ParticipantSchoolOrEmployer,
+    pd.ParticipantFieldOfInterest,
+    pd.NewsLetter
 FROM People p
-INNER JOIN ParticipantDetails pd ON p.PeopleID = pd.ParticipantID
-ORDER BY p.PeopleID DESC;
+INNER JOIN ParticipantDetails pd ON p.PersonID = pd.PersonID
+ORDER BY p.PersonID DESC;
 
 -- ============================================================================
 -- 5. GET ALL EVENTS (Manager View)
 -- ============================================================================
--- ERD shows: Events table directly
+-- ERD shows: EventTemplate -> EventOccurrences
 -- CORRECTED:
 
 SELECT 
-    e.EventID,
-    e.EventName,
-    e.EventType,
-    e.EventDescription,
-    e.EventDate,
-    e.EventTime,
-    e.EventLocation,
-    e.EventCapacity,
+    eo.EventOccurrenceID,
+    eo.EventName,
+    eo.EventDateTimeStart,
+    eo.EventDateTimeEnd,
+    eo.EventLocation,
+    eo.EventCapacity,
+    eo.EventRegistrationDeadline,
+    et.EventTemplateID,
+    et.EventType,
+    et.EventDescription,
+    et.EventRecurrencePattern,
+    et.EventDefaultCapacity,
     COUNT(er.RegistrationID) as registered_count
-FROM Events e
-LEFT JOIN EventRegistrations er ON e.EventID = er.EventID
-GROUP BY e.EventID, e.EventName, e.EventType, e.EventDescription, 
-         e.EventDate, e.EventTime, e.EventLocation, e.EventCapacity
-ORDER BY e.EventDate DESC;
+FROM EventOccurrences eo
+INNER JOIN EventTemplate et ON eo.EventTemplateID = et.EventTemplateID
+LEFT JOIN EventRegistrations er ON eo.EventOccurrenceID = er.EventOccurrenceID
+GROUP BY eo.EventOccurrenceID, eo.EventName, eo.EventDateTimeStart, eo.EventDateTimeEnd,
+         eo.EventLocation, eo.EventCapacity, eo.EventRegistrationDeadline,
+         et.EventTemplateID, et.EventType, et.EventDescription, 
+         et.EventRecurrencePattern, et.EventDefaultCapacity
+ORDER BY eo.EventDateTimeStart DESC;
 
 -- ============================================================================
 -- 6. GET ALL DONATIONS (Manager View)
 -- ============================================================================
--- ERD shows: Donations with DonationID (PK), PeopleID (FK), DonationAmount
+-- ERD shows: Donations with DonationID (PK), PersonID (FK), DonationDate, DonationAmount
 -- CORRECTED:
 
 SELECT 
     d.DonationID,
     d.DonationAmount,
     d.DonationDate,
-    p.PeopleID,
+    p.PersonID,
     p.FirstName,
     p.LastName,
     p.Email,
     p.PhoneNumber
 FROM Donations d
-INNER JOIN People p ON d.PeopleID = p.PeopleID
+INNER JOIN People p ON d.PersonID = p.PersonID
 ORDER BY d.DonationDate DESC;
 
 -- ============================================================================
@@ -162,167 +167,258 @@ SELECT
     d.DonationAmount,
     d.DonationDate
 FROM Donations d
-WHERE d.PeopleID = :userId
+WHERE d.PersonID = :userId
 ORDER BY d.DonationDate DESC;
 
 -- ============================================================================
 -- 8. GET USER MILESTONES (User View)
 -- ============================================================================
--- ERD doesn't show Milestones, but current schema has it
--- Assuming Milestones table exists with PeopleID FK:
+-- ERD shows: Milestones with MilestoneID (PK), PersonID (FK), MilestoneTitle, MilestoneDate
+-- CORRECTED:
 
 SELECT 
     m.MilestoneID,
     m.MilestoneTitle,
     m.MilestoneDate
 FROM Milestones m
-WHERE m.PeopleID = :userId
+WHERE m.PersonID = :userId
 ORDER BY m.MilestoneDate DESC;
 
 -- ============================================================================
 -- 9. LOGIN QUERY (Authentication)
 -- ============================================================================
--- ERD shows: AdminDetails with AdminID (PK), Password, MobileNo
---            CoordinatorDetails with CoordinatorID (PK), Password, MobileNo
---            ParticipantDetails with ParticipantID (PK), Password, MobileNo
---            Note: These appear separate from People table in ERD
+-- ERD shows: People -> PeopleRoles -> Roles (many-to-many)
+--            People -> AdminDetails/VolunteerDetails/ParticipantDetails (1:1)
+--            Detail tables have PersonID as PK/FK and Password field
 -- CORRECTED:
 
--- For Admin login:
+-- Step 1: Find person by email and get their roles
 SELECT 
-    ad.AdminID,
-    ad.Password,
-    ad.MobileNo
-FROM AdminDetails ad
-WHERE ad.AdminID = :adminId AND ad.Password = :password;
-
--- For Coordinator/Volunteer login:
-SELECT 
-    cd.CoordinatorID,
-    cd.Password,
-    cd.MobileNo
-FROM CoordinatorDetails cd
-WHERE cd.CoordinatorID = :coordinatorId AND cd.Password = :password;
-
--- For Participant login (if allowed):
-SELECT 
-    pd.ParticipantID,
-    pd.Password,
-    pd.MobileNo
-FROM ParticipantDetails pd
-WHERE pd.ParticipantID = :participantId AND pd.Password = :password;
-
--- ============================================================================
--- 10. GET PEOPLE WITH STATE (If State table exists)
--- ============================================================================
--- ERD shows: People with StateID FK referencing State table
--- CORRECTED:
-
-SELECT 
-    p.PeopleID,
+    p.PersonID,
     p.Email,
     p.FirstName,
     p.LastName,
-    p.Address,
-    p.PhoneNumber,
-    p.City,
-    p.Zip,
-    s.StateID,
-    s.StateName
+    r.RoleID,
+    r.RoleName
 FROM People p
-LEFT JOIN State s ON p.StateID = s.StateID
-ORDER BY p.PeopleID DESC;
+INNER JOIN PeopleRoles pr ON p.PersonID = pr.PersonID
+INNER JOIN Roles r ON pr.RoleID = r.RoleID
+WHERE p.Email = :email;
+
+-- Step 2: Check password in appropriate detail table based on role
+-- For Admin:
+SELECT 
+    ad.PersonID,
+    ad.Password,
+    ad.AdminRole,
+    ad.Salary
+FROM AdminDetails ad
+WHERE ad.PersonID = :personId AND ad.Password = :password;
+
+-- For Volunteer:
+SELECT 
+    vd.PersonID,
+    vd.Password,
+    vd.VolunteerRole
+FROM VolunteerDetails vd
+WHERE vd.PersonID = :personId AND vd.Password = :password;
+
+-- For Participant:
+SELECT 
+    pd.PersonID,
+    pd.Password,
+    pd.ParticipantSchoolOrEmployer,
+    pd.ParticipantFieldOfInterest,
+    pd.NewsLetter
+FROM ParticipantDetails pd
+WHERE pd.PersonID = :personId AND pd.Password = :password;
 
 -- ============================================================================
--- 11. GET EVENT REGISTRATIONS WITH PEOPLE AND EVENTS
+-- 10. GET ALL PEOPLE WITH ROLES (Manager View)
+-- ============================================================================
+-- ERD shows: People -> PeopleRoles -> Roles (many-to-many)
+-- CORRECTED:
+
+SELECT 
+    p.PersonID,
+    p.Email,
+    p.FirstName,
+    p.LastName,
+    p.Birthdate,
+    p.PhoneNumber,
+    p.City,
+    p.Country,
+    p.State,
+    p.Zip,
+    STRING_AGG(r.RoleName, ', ') as roles
+FROM People p
+LEFT JOIN PeopleRoles pr ON p.PersonID = pr.PersonID
+LEFT JOIN Roles r ON pr.RoleID = r.RoleID
+GROUP BY p.PersonID, p.Email, p.FirstName, p.LastName, p.Birthdate,
+         p.PhoneNumber, p.City, p.Country, p.State, p.Zip
+ORDER BY p.PersonID DESC;
+
+-- ============================================================================
+-- 11. GET EVENT REGISTRATIONS WITH PEOPLE AND EVENT DETAILS (Manager View)
 -- ============================================================================
 -- CORRECTED:
 
 SELECT 
     er.RegistrationID,
-    er.RegistrationDate,
+    er.RegistrationCreationAt as RegistrationDate,
     er.RegistrationStatus,
-    er.EventEnrollment,
-    er.RegistrationAmountPaid,
-    er.RegistrationAmountDue,
-    p.PeopleID,
+    er.RegistrationAttendedFlag,
+    er.RegistrationCheckInTime,
+    p.PersonID,
     p.FirstName,
     p.LastName,
     p.Email,
-    e.EventID,
-    e.EventName,
-    e.EventType,
-    e.EventDate,
-    e.EventTime
+    eo.EventOccurrenceID,
+    eo.EventName,
+    eo.EventDateTimeStart,
+    eo.EventDateTimeEnd,
+    eo.EventLocation,
+    et.EventType
 FROM EventRegistrations er
-INNER JOIN People p ON er.PeopleID = p.PeopleID
-INNER JOIN Events e ON er.EventID = e.EventID
-ORDER BY er.RegistrationDate DESC;
+INNER JOIN People p ON er.PersonID = p.PersonID
+INNER JOIN EventOccurrences eo ON er.EventOccurrenceID = eo.EventOccurrenceID
+INNER JOIN EventTemplate et ON eo.EventTemplateID = et.EventTemplateID
+ORDER BY er.RegistrationCreationAt DESC;
 
 -- ============================================================================
--- 12. GET EVENT DOCUMENTS (If EventDocuments table exists)
+-- 12. GET ALL SURVEYS WITH EVENT AND PERSON INFO (Manager View)
 -- ============================================================================
--- ERD shows: EventDocuments with EventDocumentID (PK), EventID (FK)
 -- CORRECTED:
 
 SELECT 
-    ed.EventDocumentID,
-    ed.EventFileName,
-    ed.EventFileType,
-    ed.EventFileSize,
-    ed.EventFilePath,
-    ed.EventUploadDate,
-    ed.EventDescription,
-    e.EventID,
-    e.EventName
-FROM EventDocuments ed
-INNER JOIN Events e ON ed.EventID = e.EventID
-WHERE e.EventID = :eventId
-ORDER BY ed.EventUploadDate DESC;
+    s.SurveyID,
+    s.SurveySatisfactionScore,
+    s.SurveyUsefulnessScore,
+    s.SurveyInstructorScore,
+    s.SurveyRecommendationScore,
+    s.SurveyOverallScore,
+    s.SurveyNPSBucket,
+    s.SurveyComments,
+    s.SurveySubmissionDate,
+    er.RegistrationID,
+    p.PersonID,
+    p.FirstName,
+    p.LastName,
+    eo.EventOccurrenceID,
+    eo.EventName
+FROM Surveys s
+INNER JOIN EventRegistrations er ON s.RegistrationID = er.RegistrationID
+INNER JOIN People p ON er.PersonID = p.PersonID
+INNER JOIN EventOccurrences eo ON er.EventOccurrenceID = eo.EventOccurrenceID
+ORDER BY s.SurveySubmissionDate DESC;
 
 -- ============================================================================
--- 13. GET SERVICES (If Services table exists)
+-- 13. GET ALL VOLUNTEERS (Manager View)
 -- ============================================================================
--- ERD shows: Services with ServiceID (PK), PeopleID (FK), 
---            ServiceCoordinatorID (FK), ServiceAdminID (FK)
+-- ERD shows: People -> VolunteerDetails (1:1 via PersonID)
 -- CORRECTED:
 
 SELECT 
-    s.ServiceID,
-    s.ServiceName,
-    s.ServiceDate,
-    s.ServiceStartTime,
-    s.ServiceEndTime,
-    s.ServiceLocation,
-    s.ServiceDescription,
-    s.ServiceStatus,
-    p.PeopleID,
-    p.FirstName as ParticipantFirstName,
-    p.LastName as ParticipantLastName,
-    cd.CoordinatorID,
-    ad.AdminID
-FROM Services s
-INNER JOIN People p ON s.PeopleID = p.PeopleID
-LEFT JOIN CoordinatorDetails cd ON s.ServiceCoordinatorID = cd.CoordinatorID
-LEFT JOIN AdminDetails ad ON s.ServiceAdminID = ad.AdminID
-ORDER BY s.ServiceDate DESC;
+    p.PersonID,
+    p.Email,
+    p.FirstName,
+    p.LastName,
+    p.PhoneNumber,
+    p.City,
+    p.State,
+    vd.VolunteerRole
+FROM People p
+INNER JOIN VolunteerDetails vd ON p.PersonID = vd.PersonID
+ORDER BY p.PersonID DESC;
 
 -- ============================================================================
--- NOTES FOR REVIEW:
+-- 14. GET ALL ADMINS (Manager View)
 -- ============================================================================
--- 1. ERD shows Events table (not EventTemplate/EventOccurrences)
--- 2. ERD shows EventRegistrations.EventID (not EventOccurrenceID)
--- 3. ERD shows People.StateID FK (not State VARCHAR(2))
--- 4. ERD shows ParticipantDetails, CoordinatorDetails, AdminDetails as 
---    separate tables (may not link to People via FK)
--- 5. ERD shows Services table (not in current schema)
--- 6. ERD shows EventDocuments table (not in current schema)
--- 7. ERD shows State lookup table (not in current schema)
--- 8. ERD shows Proposals and Ministers tables (not in current schema)
--- 
--- DECISION NEEDED: Which schema should we use?
--- - Current schema (EventTemplate/EventOccurrences, PeopleRoles junction)
--- - ERD schema (Events, separate detail tables)
--- - Hybrid approach
--- ============================================================================
+-- ERD shows: People -> AdminDetails (1:1 via PersonID)
+-- CORRECTED:
 
+SELECT 
+    p.PersonID,
+    p.Email,
+    p.FirstName,
+    p.LastName,
+    p.PhoneNumber,
+    ad.AdminRole,
+    ad.Salary
+FROM People p
+INNER JOIN AdminDetails ad ON p.PersonID = ad.PersonID
+ORDER BY p.PersonID DESC;
+
+-- ============================================================================
+-- 15. GET EVENT OCCURRENCES BY TEMPLATE (For Program Pages)
+-- ============================================================================
+-- CORRECTED:
+
+SELECT 
+    eo.EventOccurrenceID,
+    eo.EventName,
+    eo.EventDateTimeStart,
+    eo.EventDateTimeEnd,
+    eo.EventLocation,
+    eo.EventCapacity,
+    eo.EventRegistrationDeadline,
+    et.EventTemplateID,
+    et.EventName as TemplateName,
+    et.EventType,
+    et.EventDescription,
+    et.EventRecurrencePattern
+FROM EventOccurrences eo
+INNER JOIN EventTemplate et ON eo.EventTemplateID = et.EventTemplateID
+WHERE et.EventTemplateID = :templateId
+ORDER BY eo.EventDateTimeStart ASC;
+
+-- ============================================================================
+-- 16. GET REGISTRATION STATISTICS (Dashboard/Reports)
+-- ============================================================================
+-- CORRECTED:
+
+SELECT 
+    eo.EventOccurrenceID,
+    eo.EventName,
+    COUNT(er.RegistrationID) as total_registrations,
+    COUNT(CASE WHEN er.RegistrationAttendedFlag = 1 THEN 1 END) as attended_count,
+    COUNT(CASE WHEN er.RegistrationStatus = 'Confirmed' THEN 1 END) as confirmed_count
+FROM EventOccurrences eo
+LEFT JOIN EventRegistrations er ON eo.EventOccurrenceID = er.EventOccurrenceID
+GROUP BY eo.EventOccurrenceID, eo.EventName
+ORDER BY eo.EventDateTimeStart DESC;
+
+-- ============================================================================
+-- 17. GET SURVEY STATISTICS BY EVENT (Reports)
+-- ============================================================================
+-- CORRECTED:
+
+SELECT 
+    eo.EventOccurrenceID,
+    eo.EventName,
+    COUNT(s.SurveyID) as survey_count,
+    AVG(s.SurveyOverallScore) as avg_overall_score,
+    AVG(s.SurveySatisfactionScore) as avg_satisfaction,
+    AVG(s.SurveyUsefulnessScore) as avg_usefulness,
+    AVG(s.SurveyInstructorScore) as avg_instructor,
+    AVG(s.SurveyRecommendationScore) as avg_recommendation
+FROM EventOccurrences eo
+LEFT JOIN EventRegistrations er ON eo.EventOccurrenceID = er.EventOccurrenceID
+LEFT JOIN Surveys s ON er.RegistrationID = s.RegistrationID
+GROUP BY eo.EventOccurrenceID, eo.EventName
+ORDER BY eo.EventDateTimeStart DESC;
+
+-- ============================================================================
+-- NOTES:
+-- ============================================================================
+-- ERD Structure Confirmed:
+-- 1. People table is central with PersonID as PK
+-- 2. PeopleRoles is junction table for many-to-many relationship with Roles
+-- 3. ParticipantDetails, VolunteerDetails, AdminDetails are 1:1 with People (PersonID is PK/FK)
+-- 4. EventTemplate -> EventOccurrences -> EventRegistrations (not direct Events table)
+-- 5. EventRegistrations -> Surveys (1:1 relationship)
+-- 6. People -> Milestones, Donations, EventRegistrations (1:many)
+-- 7. All detail tables use PersonID as both PK and FK to People
+-- 8. State is VARCHAR(2) in People table (not a separate State table)
+-- 9. No Services, EventDocuments, Proposals, Ministers tables in this ERD
+-- ============================================================================
