@@ -7,9 +7,23 @@ const bcrypt = require('bcryptjs');
 const { requireAuth, requireManager } = require('../middleware/auth');
 const db = require('../db');
 
+// Email transporter - imported from utils module
+const transporter = require('../utils/email');
+const nodemailer = require("nodemailer");
+
 // ============================================================================
 // PUBLIC ROUTES
 // ============================================================================
+
+// Health check endpoint - for deployment verification
+router.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        port: process.env.PORT || 8080
+    });
+});
 
 // Homepage - shows upcoming events
 router.get('/', async (req, res) => {
@@ -259,6 +273,34 @@ router.get('/teapot', (req, res) => {
     });
 });
 
+// Send email route - POST /send-email
+router.post('/send-email', async (req, res) => {
+    try {
+        const info = await transporter.sendMail({
+            from: '"Melyssa Kessler" <melyssa.kessler64@ethereal.email>',
+            to: "gunnjake@byu.edu, blanesantilli@gmail.com",
+            subject: "Hello",
+            text: "Hello world?", // plain‑text body
+            html: "<b>Hello world?</b>", // HTML body
+        });
+
+        console.log("Message sent:", info.messageId);
+        console.log('Preview URL: ' + nodemailer.getTestMessageUrl(info));
+        
+        res.json({ 
+            success: true, 
+            messageId: info.messageId,
+            previewUrl: nodemailer.getTestMessageUrl(info)
+        });
+    } catch (error) {
+        console.error('Email send error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 // ============================================================================
 // AUTHENTICATION ROUTES
 // ============================================================================
@@ -434,12 +476,12 @@ router.post('/setup-password', async (req, res) => {
     }
     
     // Validate passwords
-    if (!password || password.length < 8) {
+    if (!password || password.length < 1) {
         return res.render('auth/setup-password', {
             title: 'Setup Password - Ella Rises',
             username: username || '',
             email: email || '',
-            error: 'Password must be at least 8 characters long',
+            error: 'Password must be at least 1 characters long',
             user: null
         });
     }

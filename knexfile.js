@@ -1,16 +1,8 @@
 // Knex config - DB connection settings using AWS RDS variables
 
-const path = require('path');
-const dotenv = require('dotenv');
-
-// Always load .env from project root
-dotenv.config({ path: path.join(__dirname, '.env') });
-
-// Validate required environment variables
-const requiredVars = ['RDS_HOSTNAME', 'RDS_DB_NAME', 'RDS_USERNAME', 'RDS_PASSWORD'];
-const missingVars = requiredVars.filter(v => !process.env[v]);
-if (missingVars.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+// Load .env ONLY in development (production uses Elastic Beanstalk environment variables)
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
 }
 
 module.exports = {
