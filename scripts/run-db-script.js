@@ -26,3 +26,4 @@ exec(command, { env: { ...process.env, PGPASSWORD: process.env.RDS_PASSWORD } },
 });
 
 
+

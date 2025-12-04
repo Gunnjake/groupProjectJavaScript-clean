@@ -7,32 +7,56 @@
 
 <div class="form-container">
     <form method="POST" action="/milestones/add">
-        <!-- Participant search -->
+        
+        <!-- Participant dropdown (pre-selected if personid provided) -->
         <div class="form-group">
-            <label for="participantSearch">Select Participant *</label>
-            <input type="text" id="participantSearch" class="form-control" placeholder="Search name or email...">
-            
-            <select name="personid" id="participantSelect" class="form-control" style="margin-top: 0.5rem;" required>
-                <% participants.forEach(p => { %>
-                    <option value="<%= p.personid %>">
-                        <%= p.firstname %> <%= p.lastname %> - <%= p.email %>
+            <label for="personid">Select Participant *</label>
+            <% if (selectedParticipant) { %>
+                <!-- Show pre-selected participant as a single dropdown -->
+                <select name="personid" id="personid" class="form-control" required>
+                    <option value="<%= selectedParticipant.personid %>" selected>
+                        <%= selectedParticipant.firstname %> <%= selectedParticipant.lastname %> - <%= selectedParticipant.email %>
                     </option>
-                <% }) %>
-            </select>
+                </select>
+                <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    Participant pre-selected from search
+                </small>
+            <% } else { %>
+                <!-- Show full dropdown if no pre-selection -->
+                <select name="personid" id="personid" class="form-control" required>
+                    <option value="">Select a participant</option>
+                    <% participants.forEach(p => { %>
+                        <option value="<%= p.personid %>">
+                            <%= p.firstname %> <%= p.lastname %> - <%= p.email %>
+                        </option>
+                    <% }) %>
+                </select>
+            <% } %>
         </div>
 
         <!-- Milestone title dropdown -->
         <div class="form-group">
             <label for="milestonetitle">Milestone Title *</label>
-            <select name="milestonetitle" id="milestonetitle" class="form-control" required>
-                <% milestoneOptions.forEach(m => { %>
-                    <option value="<%= m.milestonetitle %>"><%= m.milestonetitle %></option>
-                <% }) %>
-            </select>
+            <% if (milestoneOptions && milestoneOptions.length > 0) { %>
+                <select name="milestonetitle" id="milestonetitle" class="form-control" required>
+                    <option value="">Select a milestone title</option>
+                    <% milestoneOptions.forEach(m => { %>
+                        <option value="<%= m.milestonetitle %>"><%= m.milestonetitle %></option>
+                    <% }) %>
+                </select>
+            <% } else { %>
+                <input type="text" name="milestonetitle" id="milestonetitle" class="form-control" placeholder="Enter milestone title" required>
+                <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    No existing milestones found. Enter a new milestone title.
+                </small>
+            <% } %>
         </div>
 
-        <!-- Auto-set today's date -->
-        <input type="hidden" name="milestonedate" value="<%= new Date().toISOString().slice(0,10) %>">
+        <!-- Milestone date (defaults to today) -->
+        <div class="form-group">
+            <label for="milestonedate">Milestone Date *</label>
+            <input type="date" name="milestonedate" id="milestonedate" class="form-control" value="<%= new Date().toISOString().slice(0,10) %>" required>
+        </div>
 
         <div class="form-actions">
             <button class="btn btn-primary" type="submit">Add Milestone</button>
@@ -41,17 +65,5 @@
     </form>
 </div>
 
-<script>
-    // Filter participants dropdown live
-    document.getElementById('participantSearch').addEventListener('input', function () {
-        let filter = this.value.toLowerCase();
-        let options = document.getElementById('participantSelect').options;
-
-        for (let i = 0; i < options.length; i++) {
-            let text = options[i].text.toLowerCase();
-            options[i].style.display = text.includes(filter) ? "block" : "none";
-        }
-    });
-</script>
 
 <%- include('../partials/footer') %>

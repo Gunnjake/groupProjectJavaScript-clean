@@ -2289,6 +2289,117 @@ router.post('/events/:id/delete', requireAuth, async (req, res) => {
 // SURVEY ROUTES (View: public/common users, CRUD: manager only)
 // ============================================================================
 
+router.get('/surveys', requireAuth, requireManager, async (req, res) => {
+    try {
+        const surveys = await knexInstance("surveys as s")
+            .leftJoin("eventregistrations as er", "s.registrationid", "er.registrationid")
+            .leftJoin("people as p", "er.personid", "p.personid")
+            .leftJoin("eventoccurrences as eo", "er.eventoccurrenceid", "eo.eventoccurrenceid")
+            .select(
+                "s.surveyid",
+                "s.surveysubmissiondate",
+                "s.surveysatisfactionscore",
+                "s.surveyusefulnessscore",
+                "s.surveyinstructorscore",
+                "s.surveyrecommendationscore",
+                "s.surveyoverallscore",
+                "s.surveycomments",
+                knexInstance.raw("COALESCE(p.firstname || ' ' || p.lastname, 'Unknown') AS participantname"),
+                "eo.eventname",
+                knexInstance.raw("TO_CHAR(eo.eventdatetimestart, 'YYYY-MM-DD') AS eventdate")
+            )
+            .orderBy("s.surveyid", "desc");
+
+        res.render("manager/surveys", {
+            title: "Completed Surveys",
+            user: req.session.user,
+            surveys: surveys || []
+        });
+
+    } catch (err) {
+        console.error("Error loading surveys list:", err);
+        req.session.messages = [{ type: "error", text: "Error loading surveys list: " + err.message }];
+        res.redirect("/");
+    }
+});
+
+router.get('/user/surveys/:registrationid', requireAuth, async (req, res) => {
+    const { registrationid } = req.params;
+
+    try {
+        // Check registration exists
+        const registration = await knexInstance("eventregistrations")
+            .where("registrationid", registrationid)
+            .first();
+
+        if (!registration) {
+            return res.redirect('/user/dashboard');
+        }
+
+        // Prevent duplicate submissions
+        const existing = await knexInstance("surveys")
+            .where("registrationid", registrationid)
+            .first();
+
+        if (existing) {
+            req.session.messages = [{ type: 'error', text: 'You have already submitted this survey.' }];
+            return res.redirect('/user/dashboard');
+        }
+
+        res.render("user/surveys", {
+            user: req.session.user,
+            registration
+        });
+
+    } catch (err) {
+        console.error("Error loading survey form:", err);
+        res.redirect('/user/dashboard');
+    }
+});
+
+router.post('/user/surveys/submit', requireAuth, async (req, res) => {
+    const {
+        registrationid,
+        surveysatisfactionscore,
+        surveyusefulnessscore,
+        surveyinstructorscore,
+        surveyrecommendationscore,
+        surveyoverallscore,
+        surveycomments
+    } = req.body;
+
+    try {
+        // Auto NPS bucket based on overall score
+        let bucket = "Neutral";
+        if (surveyoverallscore >= 4) bucket = "Promoter";
+        else if (surveyoverallscore <= 2) bucket = "Detractor";
+
+        await knexInstance("surveys").insert({
+            registrationid,
+            surveysubmissiondate: knexInstance.fn.now(),
+            surveysatisfactionscore,
+            surveyusefulnessscore,
+            surveyinstructorscore,
+            surveyrecommendationscore,
+            surveyoverallscore,
+            surveycomments,
+            surveynpsbucket: bucket
+        });
+
+        req.session.messages = [{ type: 'success', text: 'Survey submitted successfully.' }];
+        res.redirect('/user/dashboard');
+
+    } catch (err) {
+        console.error("Error submitting survey:", err);
+        req.session.messages = [{ type: 'error', text: 'Error submitting survey: ' + err.message }];
+        res.redirect('/user/dashboard');
+    }
+});
+
+
+// OLD DUPLICATE ROUTES REMOVED - Using the updated routes below
+
+
 // Customer's own surveys page
 router.get('/my-surveys', requireAuth, async (req, res) => {
     try {
@@ -2422,185 +2533,124 @@ router.get('/surveys/builder', requireAuth, requireManager, async (req, res) => 
     }
 });
 
-// POST Route: Save Survey Builder
+// GET: Create Survey (Select Event Only)
+router.get('/surveys/builder', requireAuth, requireManager, async (req, res) => {
+    try {
+        // Load all event occurrences
+        const events = await knexInstance("eventoccurrences")
+            .select("eventoccurrenceid", "eventname", "eventdatetimestart")
+            .orderBy("eventdatetimestart", "desc");
+
+        res.render("manager/survey-builder", {
+            title: "Create Survey",
+            user: req.session.user,
+            events
+        });
+
+    } catch (err) {
+        console.error("Error loading survey creator:", err);
+        req.session.messages = [{ type: 'error', text: 'Error loading survey creator.' }];
+        res.redirect("/surveys");
+    }
+});
+
+
+// POST: Create Survey for Selected Event
 router.post('/surveys/builder/save', requireAuth, requireManager, async (req, res) => {
-    const { eventid, existing_ids, existing_questions, delete_ids, new_questions } = req.body;
+    const { eventid } = req.body;
 
     try {
         if (!eventid) {
-            req.session.messages = [{ type: 'error', text: 'Event ID is required.' }];
+            req.session.messages = [{ type: "error", text: "Please select an event." }];
             return res.redirect("/surveys/builder");
         }
 
-        // Verify event occurrence exists
-        const eventOccurrence = await knexInstance("eventoccurrences")
+        // Ensure event exists
+        const eventExists = await knexInstance("eventoccurrences")
             .where("eventoccurrenceid", eventid)
             .first();
 
-        if (!eventOccurrence) {
-            req.session.messages = [{ type: 'error', text: 'Event not found.' }];
+        if (!eventExists) {
+            req.session.messages = [{ type: "error", text: "Selected event does not exist." }];
             return res.redirect("/surveys/builder");
         }
 
-        // Delete selected questions
-        if (delete_ids) {
-            const idsToDelete = Array.isArray(delete_ids) ? delete_ids : [delete_ids];
-            await knexInstance("surveys")
-                .whereIn("surveyid", idsToDelete)
-                .where("eventid", eventid)
-                .del();
+        // Check if survey already exists for this event
+        const existing = await knexInstance("surveys")
+            .where("eventid", eventid)
+            .first();
+
+        if (!existing) {
+            // Create empty survey shell
+            await knexInstance("surveys").insert({
+                eventid: eventid,
+                question: null   // no questions yet
+            });
         }
 
-        // Update existing questions
-        if (existing_ids && existing_questions) {
-            const ids = Array.isArray(existing_ids) ? existing_ids : [existing_ids];
-            const questions = Array.isArray(existing_questions) ? existing_questions : [existing_questions];
+        req.session.messages = [
+            { type: "success", text: "Survey created for event." }
+        ];
 
-            for (let i = 0; i < ids.length; i++) {
-                const surveyId = ids[i];
-                const questionText = questions[i]?.trim();
-                
-                // Skip temp IDs (they're new questions)
-                if (surveyId && !surveyId.toString().startsWith('temp_') && questionText) {
-                    await knexInstance("surveys")
-                        .where("surveyid", surveyId)
-                        .where("eventid", eventid)
-                        .update({ question: questionText });
-                }
-            }
-        }
-
-        // Insert new questions
-        if (new_questions) {
-            const list = Array.isArray(new_questions) ? new_questions : [new_questions];
-            for (let q of list) {
-                const trimmed = q?.trim();
-                if (trimmed) {
-                    await knexInstance("surveys").insert({
-                        eventid: eventid, // eventid IS eventoccurrenceid
-                        question: trimmed
-                    });
-                }
-            }
-        }
-
-        req.session.messages = [{ type: 'success', text: 'Survey saved successfully.' }];
-        res.redirect(`/surveys/builder?eventid=${eventid}`);
+        return res.redirect("/surveys");
 
     } catch (err) {
-        console.error("Error saving survey:", err);
-        req.session.messages = [{ type: 'error', text: 'Error saving survey: ' + err.message }];
+        console.error("Error creating survey:", err);
+        req.session.messages = [{ type: "error", text: "Error creating survey." }];
         res.redirect("/surveys/builder");
     }
 });
 
-router.get('/surveys', async (req, res) => {
-    // Manager-only view - shows all surveys grouped by event name (ignoring dates)
-    const user = req.session.user || null;
-    const isManager = user && user.role === 'manager';
-    
-    if (!isManager) {
-        // Redirect customers to their own surveys page
-        if (user) {
-            return res.redirect('/my-surveys');
-        }
-        // Not logged in - redirect to login
-        return res.redirect('/login');
-    }
-    
-    try {
-        // Group surveys by EventTemplateID, aggregating across all EventOccurrences
-        // Join chain: Surveys → EventRegistrations → EventOccurrences → EventTemplate
-        const surveyGroups = await knexInstance('Surveys as s')
-            .join('EventRegistrations as er', 's.RegistrationID', 'er.RegistrationID')
-            .join('EventOccurrences as eo', 'er.EventOccurrenceID', 'eo.EventOccurrenceID')
-            .join('EventTemplate as et', 'eo.EventTemplateID', 'et.EventTemplateID')
-            .select(
-                'et.EventName',
-                knexInstance.raw('COUNT(s.SurveyID) as survey_count'),
-                knexInstance.raw('AVG(s.SurveySatisfactionScore) as avg_satisfaction'),
-                knexInstance.raw('AVG(s.SurveyUsefulnessScore) as avg_usefulness'),
-                knexInstance.raw('AVG(s.SurveyRecommendationScore) as avg_recommendation'),
-                knexInstance.raw('AVG(s.SurveyOverallScore) as avg_overall')
-            )
-            .groupBy('et.EventTemplateID', 'et.EventName')
-            .orderBy('et.EventName', 'asc');
-        
-        // Process groups into simple format
-        const processedGroups = surveyGroups.map(group => ({
-            eventName: group.EventName || group.eventname || 'N/A',
-            survey_count: parseInt(group.survey_count) || 0,
-            avg_satisfaction: group.avg_satisfaction ? parseFloat(group.avg_satisfaction) : null,
-            avg_usefulness: group.avg_usefulness ? parseFloat(group.avg_usefulness) : null,
-            avg_recommendation: group.avg_recommendation ? parseFloat(group.avg_recommendation) : null,
-            avg_overall: group.avg_overall ? parseFloat(group.avg_overall) : null
-        }));
-        
-        res.render('manager/surveys', {
-            title: 'Post-Event Surveys - Ella Rises',
-            user: user,
-            surveyGroups: processedGroups || [],
-            messages: req.session.messages || []
-        });
-        req.session.messages = [];
-    } catch (error) {
-        console.error('Error fetching surveys:', error);
-        res.render('manager/surveys', {
-            title: 'Post-Event Surveys - Ella Rises',
-            user: user,
-            surveyGroups: [],
-            messages: [{ type: 'error', text: 'Error loading surveys.' }]
-        });
-        req.session.messages = [];
-    }
-});
 
 router.get('/surveys/new', requireAuth, requireManager, async (req, res) => {
     try {
-        // Get all event registrations with person and event info for dropdown
-        // Join chain: EventRegistrations → People → EventOccurrences → EventTemplate
-        const registrations = await knexInstance('EventRegistrations as er')
-            .join('People as p', 'er.PersonID', 'p.PersonID')
-            .join('EventOccurrences as eo', 'er.EventOccurrenceID', 'eo.EventOccurrenceID')
-            .join('EventTemplate as et', 'eo.EventTemplateID', 'et.EventTemplateID')
+        // Get all events (search by eventname or eventtemplateid, NOT by people)
+        // Join chain: EventOccurrences → EventTemplate
+        const events = await knexInstance('EventOccurrences as eo')
+            .leftJoin('EventTemplate as et', 'eo.EventTemplateID', 'et.EventTemplateID')
             .select(
-                'er.RegistrationID as registrationid',
-                'p.FirstName',
-                'p.LastName',
-                'et.EventName as eventname',
-                'eo.EventDateTimeStart'
+                'eo.EventOccurrenceID as eventoccurrenceid',
+                'eo.EventName as eventname',
+                'eo.EventDateTimeStart',
+                'et.EventTemplateID as eventtemplateid',
+                'et.EventName as templatename',
+                'et.EventDescription'
             )
-            .orderBy('eo.EventDateTimeStart', 'desc')
-            .orderBy('p.LastName', 'asc');
+            .orderBy('eo.EventDateTimeStart', 'desc');
         
-        // Format registrations for dropdown
-        const registrationOptions = registrations.map(reg => {
-            const personName = `${reg.FirstName || reg.firstname || ''} ${reg.LastName || reg.lastname || ''}`.trim();
-            const eventName = reg.eventname || reg.EventName || 'Event';
-            const eventDate = reg.EventDateTimeStart ? new Date(reg.EventDateTimeStart).toLocaleDateString() : '';
+        // Format events for dropdown (remove empty parentheses)
+        const eventOptions = events.map(event => {
+            const eventName = event.eventname || event.templatename || 'Event';
+            const eventDate = event.EventDateTimeStart ? new Date(event.EventDateTimeStart).toLocaleDateString() : '';
+            
+            // Only show secondary label if it exists and is different from event name
+            let displayName = eventName;
+            if (event.templatename && event.templatename !== eventName) {
+                displayName = `${eventName} (${event.templatename})`;
+            }
             
             return {
-                registrationid: reg.registrationid || reg.RegistrationID,
-                personname: personName,
-                eventname: eventName,
-                eventdate: eventDate
+                eventoccurrenceid: event.eventoccurrenceid,
+                eventname: displayName,
+                eventdate: eventDate,
+                eventtemplateid: event.eventtemplateid
             };
         });
         
-        res.render('manager/surveys-form', {
+        res.render('manager/surveys-add', {
             title: 'Add Survey',
             user: req.session.user || null,
-            registrations: registrationOptions || [],
+            events: eventOptions || [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
     } catch (error) {
         console.error('Error fetching data for survey form:', error);
-        req.session.messages = [{ type: 'error', text: 'Error loading survey form.' }];
-        res.render('manager/surveys-form', {
+        req.session.messages = [{ type: 'error', text: 'Error loading survey form: ' + error.message }];
+        res.render('manager/surveys-add', {
             title: 'Add Survey',
             user: req.session.user || null,
-            registrations: [],
+            events: [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
@@ -2608,49 +2658,43 @@ router.get('/surveys/new', requireAuth, requireManager, async (req, res) => {
 });
 
 router.post('/surveys/new', requireAuth, requireManager, async (req, res) => {
-    const { registrationid } = req.body;
+    const { eventoccurrenceid } = req.body;
     
     // Validate required fields
-    if (!registrationid) {
-        req.session.messages = [{ type: 'error', text: 'Registration is required.' }];
+    if (!eventoccurrenceid) {
+        req.session.messages = [{ type: 'error', text: 'Event is required.' }];
         return res.redirect('/surveys/new');
     }
     
     try {
-        // Verify registration exists
-        const registration = await knexInstance('EventRegistrations')
-            .where('RegistrationID', registrationid)
+        // Verify event exists
+        const event = await knexInstance('EventOccurrences')
+            .where('EventOccurrenceID', eventoccurrenceid)
             .first();
         
-        if (!registration) {
-            req.session.messages = [{ type: 'error', text: 'Registration not found.' }];
+        if (!event) {
+            req.session.messages = [{ type: 'error', text: 'Event not found.' }];
             return res.redirect('/surveys/new');
         }
         
-        // Check if survey already exists for this registration
-        const existingSurvey = await knexInstance('Surveys')
-            .where('RegistrationID', registrationid)
+        // Check if survey template already exists for this event (using lowercase table name)
+        const existingSurvey = await knexInstance('surveys')
+            .where('eventid', eventoccurrenceid)
             .first();
         
         if (existingSurvey) {
-            req.session.messages = [{ type: 'error', text: 'A survey already exists for this registration.' }];
+            req.session.messages = [{ type: 'error', text: 'A survey template already exists for this event.' }];
             return res.redirect('/surveys/new');
         }
         
-        // Insert new survey with all null/default values
-        await knexInstance('Surveys').insert({
-            RegistrationID: registrationid,
-            SurveySatisfactionScore: null,
-            SurveyUsefulnessScore: null,
-            SurveyInstructorScore: null,
-            SurveyRecommendationScore: null,
-            SurveyOverallScore: null,
-            SurveyNPSBucket: null,
-            SurveyComments: null,
-            SurveySubmissionDate: new Date()
+        // Insert new survey template for this event (even if it's the first one)
+        // Use lowercase table name to match schema
+        await knexInstance('surveys').insert({
+            eventid: eventoccurrenceid,
+            question: null  // No questions yet, admin can add them later
         });
         
-        req.session.messages = [{ type: 'success', text: 'Survey added successfully' }];
+        req.session.messages = [{ type: 'success', text: 'Survey template created successfully for this event.' }];
         return res.redirect('/surveys');
     } catch (error) {
         console.error('Error creating survey:', error);
@@ -2802,18 +2846,29 @@ router.post('/surveys/:eventId/submit', requireAuth, async (req, res) => {
 //     // Removed - no editing functionality
 // });
 
-router.post('/surveys/:id/delete', requireAuth, async (req, res) => {
-    if (req.session.user.role !== 'manager') {
-        return res.status(403).send('Access denied.');
-    }
+router.post('/surveys/:id/delete', requireAuth, requireManager, async (req, res) => {
     const { id } = req.params;
     try {
-        // TODO: await db('surveys').where({ id }).del();
-        req.session.messages = [{ type: 'success', text: 'Survey deleted successfully' }];
+        // Verify survey exists
+        const survey = await knexInstance('surveys')
+            .where('surveyid', id)
+            .first();
+
+        if (!survey) {
+            req.session.messages = [{ type: 'error', text: 'Survey not found.' }];
+            return res.redirect('/surveys');
+        }
+
+        // Delete the survey
+        await knexInstance('surveys')
+            .where('surveyid', id)
+            .del();
+
+        req.session.messages = [{ type: 'success', text: 'Survey deleted successfully.' }];
         res.redirect('/surveys');
     } catch (error) {
         console.error('Error deleting survey:', error);
-        req.session.messages = [{ type: 'error', text: 'Error deleting survey. Please try again.' }];
+        req.session.messages = [{ type: 'error', text: 'Error deleting survey: ' + error.message }];
         res.redirect('/surveys');
     }
 });
@@ -2988,24 +3043,38 @@ router.get('/milestones/add', requireAuth, requireManager, async (req, res) => {
     try {
         const selectedPersonId = req.query.personid || null;
 
+        // Get unique milestone titles from existing milestones
         const milestoneOptions = await knexInstance("milestones")
             .distinct("milestonetitle")
+            .whereNotNull("milestonetitle")
             .orderBy("milestonetitle");
 
+        // Get all participants
         const participants = await knexInstance("people")
             .select("personid", "firstname", "lastname", "email")
             .orderBy("lastname");
 
+        // If personid is provided, get that specific participant
+        let selectedParticipant = null;
+        if (selectedPersonId) {
+            selectedParticipant = await knexInstance("people")
+                .select("personid", "firstname", "lastname", "email")
+                .where("personid", selectedPersonId)
+                .first();
+        }
+
         res.render("manager/milestones-add", {
             title: "Add Milestone",
             user: req.session.user,
-            milestoneOptions,
+            milestoneOptions: milestoneOptions || [],
             participants,
-            selectedPersonId
+            selectedPersonId,
+            selectedParticipant
         });
 
     } catch (err) {
         console.error("Error loading add milestone:", err);
+        req.session.messages = [{ type: 'error', text: 'Error loading milestone form: ' + err.message }];
         res.redirect("/milestones");
     }
 });
@@ -3015,37 +3084,53 @@ router.get('/milestones/add', requireAuth, requireManager, async (req, res) => {
 router.post('/milestones/add', requireAuth, requireManager, async (req, res) => {
     const { personid, milestonetitle, milestonedate } = req.body;
 
-    try {
-        await knexInstance("milestones").insert({
-            personid,
-            milestonetitle,
-            milestonedate
-        });
-
-        res.redirect("/milestones");
-
-    } catch (err) {
-        console.error("Error adding milestone:", err);
-        res.redirect("/milestones");
+    // Validate required fields
+    if (!personid || !milestonetitle) {
+        req.session.messages = [{ type: 'error', text: 'Person and milestone title are required.' }];
+        return res.redirect("/milestones/add");
     }
-});
-
-// POST Route: Insert Milestone
-router.post('/milestones/add', requireAuth, requireManager, async (req, res) => {
-    const { personid, milestonetitle, milestonedate } = req.body;
 
     try {
+        // Verify person exists
+        const person = await knexInstance("people")
+            .where("personid", personid)
+            .first();
+
+        if (!person) {
+            req.session.messages = [{ type: 'error', text: 'Selected person not found.' }];
+            return res.redirect("/milestones/add");
+        }
+
+        // Use today's date if not provided
+        const milestoneDate = milestonedate || new Date().toISOString().slice(0, 10);
+
+        // Fix auto-increment: Get max ID and set sequence
+        try {
+            const maxIdResult = await knexInstance("milestones")
+                .max("milestoneid as max_id")
+                .first();
+            
+            const maxId = maxIdResult?.max_id || 0;
+            await knexInstance.raw(`SELECT setval('milestones_milestoneid_seq', ${maxId}, true)`);
+        } catch (seqError) {
+            // If sequence doesn't exist or table is empty, that's okay
+            console.log("Sequence reset skipped (may be first insert):", seqError.message);
+        }
+
+        // Insert milestone
         await knexInstance("milestones").insert({
-            personid,
-            milestonetitle,
-            milestonedate
+            personid: parseInt(personid),
+            milestonetitle: milestonetitle.trim(),
+            milestonedate: milestoneDate
         });
 
+        req.session.messages = [{ type: 'success', text: 'Milestone added successfully.' }];
         res.redirect("/milestones");
 
     } catch (err) {
         console.error("Error adding milestone:", err);
-        res.redirect("/milestones");
+        req.session.messages = [{ type: 'error', text: 'Error adding milestone: ' + err.message }];
+        res.redirect("/milestones/add");
     }
 });
 
@@ -3436,15 +3521,36 @@ router.post('/donations/add', requireAuth, requireManager, async (req, res) => {
             donationdate
         } = req.body;
 
+        // Validation: Cannot have both existing person AND new person fields filled
+        const hasExistingPerson = personid && personid.trim() !== '';
+        const hasNewPersonFields = (new_firstname && new_firstname.trim() !== '') || 
+                                   (new_lastname && new_lastname.trim() !== '') || 
+                                   (new_email && new_email.trim() !== '');
+
+        if (hasExistingPerson && hasNewPersonFields) {
+            req.session.messages = [{ type: 'error', text: 'Please choose either an existing person OR create a new person, not both.' }];
+            return res.redirect('/donations/new');
+        }
+
+        if (!hasExistingPerson && !hasNewPersonFields) {
+            req.session.messages = [{ type: 'error', text: 'Please select an existing person or create a new one.' }];
+            return res.redirect('/donations/new');
+        }
+
         let finalPersonId = personid;
 
         // If no existing person was selected, create a new one
         if (!finalPersonId || finalPersonId === "") {
+            if (!new_firstname || !new_lastname || !new_email) {
+                req.session.messages = [{ type: 'error', text: 'First name, last name, and email are required for new donors.' }];
+                return res.redirect('/donations/new');
+            }
+
             const inserted = await knexInstance('people')
                 .insert({
-                    firstname: new_firstname || '',
-                    lastname: new_lastname || '',
-                    email: new_email || '',
+                    firstname: new_firstname.trim(),
+                    lastname: new_lastname.trim(),
+                    email: new_email.trim(),
                     phonenumber: new_phone || '',
                     city: new_city || '',
                     state: new_state || '',
@@ -3454,22 +3560,53 @@ router.post('/donations/add', requireAuth, requireManager, async (req, res) => {
                 .returning(['personid']);
 
             finalPersonId = inserted[0].personid;
+
+            // Ensure new donor has Participant role in PeopleRoles
+            const existingRole = await knexInstance('peopleroles')
+                .where('personid', finalPersonId)
+                .where('roleid', 1) // RoleID 1 = Participant
+                .first();
+
+            if (!existingRole) {
+                await knexInstance('peopleroles').insert({
+                    personid: finalPersonId,
+                    roleid: 1 // Participant role
+                });
+            }
         }
 
-        // Format date
-        const formattedDate = new Date(donationdate).toISOString().slice(0, 10);
+        // Format date: Use YYYY-MM-DD HH:MM:SS format
+        let formattedDate;
+        if (donationdate) {
+            // If date is provided, combine with current time for timestamp
+            const dateObj = new Date(donationdate);
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            // Format as PostgreSQL timestamp string: YYYY-MM-DD HH:MM:SS
+            formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        } else {
+            // Use current timestamp - PostgreSQL will handle NOW()
+            formattedDate = knexInstance.raw('NOW()');
+        }
 
-        // Insert donation (no email field)
+        // Insert donation
         await knexInstance('donations').insert({
             personid: finalPersonId,
-            donationamount: amount,
+            donationamount: parseFloat(amount) || 0,
             donationdate: formattedDate
         });
 
+        req.session.messages = [{ type: 'success', text: 'Donation added successfully.' }];
         res.redirect('/donations');
     } catch (err) {
         console.error("Error adding donation:", err);
-        res.redirect('/donations');
+        req.session.messages = [{ type: 'error', text: 'Error adding donation: ' + err.message }];
+        res.redirect('/donations/new');
     }
 });
 

@@ -2,7 +2,7 @@
 
 <div class="page-header">
     <h1>Add Survey</h1>
-    <p>Select an event registration to add a survey</p>
+    <p>Select an event to create a survey template</p>
 </div>
 
 <% if (messages && messages.length > 0) { %>
@@ -16,12 +16,12 @@
 <div class="form-container" style="max-width: 800px; margin: 0 auto; padding: 0 2rem;">
     <form action="/surveys/new" method="POST">
         <div class="form-group">
-            <label for="registrationSearch">Search Event Registration *</label>
-            <input type="text" id="registrationSearch" class="form-control" placeholder="Type to search by person name or event name..." autocomplete="off" required>
-            <input type="hidden" name="registrationid" id="registrationid" required>
+            <label for="eventSearch">Search Event *</label>
+            <input type="text" id="eventSearch" class="form-control" placeholder="Type to search by event name..." autocomplete="off" required>
+            <input type="hidden" name="eventoccurrenceid" id="eventoccurrenceid" required>
             <div id="searchResults" class="search-results" style="display: none; margin-top: 0.5rem; border: 1px solid var(--border-light); border-radius: 4px; background: white; max-height: 300px; overflow-y: auto; position: absolute; z-index: 1000; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
             <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.25rem;">
-                Start typing to search for a person or event.
+                Start typing to search for an event by name or template ID.
             </small>
         </div>
 
@@ -33,53 +33,53 @@
 </div>
 
 <script>
-    // Store all registrations data
-    const allRegistrations = <%- JSON.stringify(registrations || []) %>;
-    const searchInput = document.getElementById('registrationSearch');
-    const hiddenInput = document.getElementById('registrationid');
+    // Store all events data (search events only, not people)
+    const allEvents = <%- JSON.stringify(events || []) %>;
+    const searchInput = document.getElementById('eventSearch');
+    const hiddenInput = document.getElementById('eventoccurrenceid');
     const resultsDiv = document.getElementById('searchResults');
-    let selectedRegistration = null;
+    let selectedEvent = null;
 
-    // Filter and display results as user types
+    // Filter and display results as user types (search by eventname or eventtemplateid)
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase().trim();
         
         if (searchTerm.length === 0) {
             resultsDiv.style.display = 'none';
             hiddenInput.value = '';
-            selectedRegistration = null;
+            selectedEvent = null;
             return;
         }
 
-        // Filter registrations
-        const filtered = allRegistrations.filter(r => {
-            const personName = (r.personname || '').toLowerCase();
-            const eventName = (r.eventname || '').toLowerCase();
-            const eventDate = (r.eventdate || '').toLowerCase();
-            const searchText = `${personName} ${eventName} ${eventDate}`;
+        // Filter events by eventname or eventtemplateid (NOT by people)
+        const filtered = allEvents.filter(e => {
+            const eventName = (e.eventname || '').toLowerCase();
+            const eventDate = (e.eventdate || '').toLowerCase();
+            const templateId = (e.eventtemplateid || '').toString();
+            const searchText = `${eventName} ${eventDate} ${templateId}`;
             return searchText.includes(searchTerm);
         });
 
         // Display results
         if (filtered.length === 0) {
-            resultsDiv.innerHTML = '<div style="padding: 1rem; color: var(--text-secondary);">No matches found</div>';
+            resultsDiv.innerHTML = '<div style="padding: 1rem; color: var(--text-secondary);">No events found</div>';
             resultsDiv.style.display = 'block';
             hiddenInput.value = '';
-            selectedRegistration = null;
+            selectedEvent = null;
         } else {
-            resultsDiv.innerHTML = filtered.map(r => {
-                const displayText = `${r.personname} – ${r.eventname} (${r.eventdate})`;
-                return `<div class="search-result-item" data-registrationid="${r.registrationid}" style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border-light); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--pink-bg)'" onmouseout="this.style.backgroundColor='white'">${displayText}</div>`;
+            resultsDiv.innerHTML = filtered.map(e => {
+                const displayText = `${e.eventname}${e.eventdate ? ' - ' + e.eventdate : ''}`;
+                return `<div class="search-result-item" data-eventoccurrenceid="${e.eventoccurrenceid}" style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border-light); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--pink-bg)'" onmouseout="this.style.backgroundColor='white'">${displayText}</div>`;
             }).join('');
             resultsDiv.style.display = 'block';
             
             // Add click handlers
             resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
                 item.addEventListener('click', function() {
-                    const registrationId = this.getAttribute('data-registrationid');
-                    selectedRegistration = allRegistrations.find(r => r.registrationid == registrationId);
-                    searchInput.value = `${selectedRegistration.personname} – ${selectedRegistration.eventname} (${selectedRegistration.eventdate})`;
-                    hiddenInput.value = registrationId;
+                    const eventOccurrenceId = this.getAttribute('data-eventoccurrenceid');
+                    selectedEvent = allEvents.find(e => e.eventoccurrenceid == eventOccurrenceId);
+                    searchInput.value = `${selectedEvent.eventname}${selectedEvent.eventdate ? ' - ' + selectedEvent.eventdate : ''}`;
+                    hiddenInput.value = eventOccurrenceId;
                     resultsDiv.style.display = 'none';
                 });
             });
@@ -97,7 +97,7 @@
     document.querySelector('form').addEventListener('submit', function(e) {
         if (!hiddenInput.value) {
             e.preventDefault();
-            alert('Please select a registration from the search results.');
+            alert('Please select an event from the search results.');
             searchInput.focus();
             return false;
         }
