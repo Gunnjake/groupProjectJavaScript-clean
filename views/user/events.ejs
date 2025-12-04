@@ -6,6 +6,16 @@
     <p>Discover our upcoming programs and workshops</p>
 </div>
 
+<!-- Filter Tabs -->
+<div class="filter-tabs" style="max-width: 1200px; margin: 0 auto 1.5rem; padding: 0 2rem; display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border-light);">
+    <a href="/events?filter=future" class="filter-tab <%= typeof filter !== 'undefined' && filter === 'future' ? 'active' : '' %>" style="padding: 0.75rem 1.5rem; text-decoration: none; color: var(--text-dark); border-bottom: 3px solid <%= typeof filter !== 'undefined' && filter === 'future' ? 'var(--coral)' : 'transparent' %>; transition: border-color 0.2s;">
+        Future Events
+    </a>
+    <a href="/events?filter=past" class="filter-tab <%= typeof filter !== 'undefined' && filter === 'past' ? 'active' : '' %>" style="padding: 0.75rem 1.5rem; text-decoration: none; color: var(--text-dark); border-bottom: 3px solid <%= typeof filter !== 'undefined' && filter === 'past' ? 'var(--coral)' : 'transparent' %>; transition: border-color 0.2s;">
+        Past Events
+    </a>
+</div>
+
 <!-- Flash messages -->
 <% if (typeof messages !== 'undefined' && messages.length > 0) { %>
     <% messages.forEach(function(message) { %>

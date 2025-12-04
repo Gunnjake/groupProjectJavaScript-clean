@@ -703,29 +703,77 @@ router.get('/newsletter', requireAuth, requireManager, async (req, res) => {
 
 router.get('/users', requireAuth, requireManager, async (req, res) => {
     try {
-        // Get all people with their roles (matching FInalTableCreation.sql schema)
-        // For PostgreSQL, we'll get people and their roles separately
-        const people = await knexInstance('People')
-            .select('*')
-            .orderBy('People.PersonID', 'desc');
+        // Get search query parameter
+        const searchQuery = req.query.q || '';
         
-        // Get roles for each person
-        const users = await Promise.all(people.map(async (person) => {
-            const roles = await knexInstance('PeopleRoles')
-                .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
-                .where('PeopleRoles.PersonID', person.PersonID || person.personid)
-                .select('Roles.RoleName');
-            
-            return {
-                ...person,
-                roles: roles.map(r => r.RoleName || r.rolename).join(', ')
+        // Base query for people with roles
+        let peopleQuery = knexInstance('People')
+            .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
+            .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
+            .select(
+                'People.PersonID',
+                'People.Email',
+                'People.FirstName',
+                'People.LastName',
+                'People.PhoneNumber',
+                'People.City',
+                'People.State',
+                'Roles.RoleName'
+            )
+            .where(function() {
+                this.where('Roles.RoleName', 'Admin')
+                    .orWhere('Roles.RoleName', 'Volunteer');
+            })
+            .orderBy('People.LastName', 'asc');
+        
+        // Apply search filter if provided (case-insensitive)
+        if (searchQuery) {
+            peopleQuery = peopleQuery.where(function() {
+                this.whereRaw('People.FirstName ILIKE ?', [`%${searchQuery}%`])
+                    .orWhereRaw('People.LastName ILIKE ?', [`%${searchQuery}%`])
+                    .orWhereRaw('People.Email ILIKE ?', [`%${searchQuery}%`]);
+            });
+        }
+        
+        const peopleWithRoles = await peopleQuery;
+        
+        // Separate into admins and volunteers
+        // If a person has both roles, they appear in both tables
+        const admins = [];
+        const volunteers = [];
+        const adminPersonIds = new Set();
+        const volunteerPersonIds = new Set();
+        
+        peopleWithRoles.forEach(row => {
+            const personId = row.PersonID || row.personid;
+            const roleName = (row.RoleName || row.rolename || '').toLowerCase();
+            const personData = {
+                PersonID: row.PersonID,
+                Email: row.Email,
+                FirstName: row.FirstName,
+                LastName: row.LastName,
+                PhoneNumber: row.PhoneNumber,
+                City: row.City,
+                State: row.State
             };
-        }));
+            
+            if (roleName === 'admin' && !adminPersonIds.has(personId)) {
+                admins.push(personData);
+                adminPersonIds.add(personId);
+            }
+            
+            if (roleName === 'volunteer' && !volunteerPersonIds.has(personId)) {
+                volunteers.push(personData);
+                volunteerPersonIds.add(personId);
+            }
+        });
         
         res.render('manager/users', {
             title: 'User Maintenance - Ella Rises',
             user: req.session.user,
-            users: users || [],
+            admins: admins || [],
+            volunteers: volunteers || [],
+            searchQuery: searchQuery,
             messages: req.session.messages || []
         });
         req.session.messages = [];
@@ -734,7 +782,9 @@ router.get('/users', requireAuth, requireManager, async (req, res) => {
         res.render('manager/users', {
             title: 'User Maintenance - Ella Rises',
             user: req.session.user,
-            users: [],
+            admins: [],
+            volunteers: [],
+            searchQuery: req.query.q || '',
             messages: [{ type: 'info', text: 'Database not connected. Users will appear here once the database is set up.' }]
         });
         req.session.messages = [];
@@ -869,24 +919,44 @@ router.get('/participants', requireAuth, async (req, res) => {
     const viewPath = isManager ? 'manager/participants' : 'user/participants';
     
     try {
-        // Get participants: People with Participant role + ParticipantDetails
+        // Get participants: People with Participant role + ParticipantDetails + most recent milestone
         const participants = await knexInstance('People')
             .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
             .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
             .join('ParticipantDetails', 'People.PersonID', 'ParticipantDetails.PersonID')
             .where('Roles.RoleName', 'Participant')
             .select(
-                'People.*',
-                'ParticipantDetails.ParticipantSchoolOrEmployer',
-                'ParticipantDetails.ParticipantFieldOfInterest',
+                'People.PersonID',
+                'People.FirstName',
+                'People.LastName',
+                'People.Email',
+                'People.City',
+                'People.State',
                 'ParticipantDetails.NewsLetter'
             )
-            .orderBy('People.PersonID', 'desc');
+            .orderBy('People.LastName', 'asc');
+        
+        // Get most recent milestone for each participant
+        const participantsWithMilestones = await Promise.all(participants.map(async (participant) => {
+            const latestMilestone = await knexInstance('Milestones')
+                .where('Milestones.PersonID', participant.PersonID)
+                .orderBy('Milestones.MilestoneDate', 'desc')
+                .select('Milestones.MilestoneTitle', 'Milestones.MilestoneDate')
+                .first();
+            
+            return {
+                ...participant,
+                latestMilestone: latestMilestone ? {
+                    title: latestMilestone.MilestoneTitle || latestMilestone.milestonetitle,
+                    date: latestMilestone.MilestoneDate || latestMilestone.milestonedate
+                } : null
+            };
+        }));
         
         res.render(viewPath, {
             title: 'Participants - Ella Rises',
             user: user,
-            participants: participants || [],
+            participants: participantsWithMilestones || [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
@@ -991,21 +1061,85 @@ router.get('/events', requireAuth, async (req, res) => {
     const isManager = user && user.role === 'manager';
     const viewPath = isManager ? 'manager/events' : 'user/events';
     
+    // Get filter from query parameter (future or past, default to future)
+    const filter = req.query.filter || 'future';
+    
     try {
-        // Get event occurrences (matching FInalTableCreation.sql schema)
-        const events = await knexInstance('EventOccurrences')
+        // Base query with joins - group by EventName
+        let query = knexInstance('EventOccurrences')
             .join('EventTemplate', 'EventOccurrences.EventTemplateID', 'EventTemplate.EventTemplateID')
             .select(
-                'EventOccurrences.*',
+                'EventOccurrences.EventName',
                 'EventTemplate.EventType',
-                'EventTemplate.EventDescription',
-                'EventTemplate.EventRecurrencePattern'
-            )
-            .orderBy('EventOccurrences.EventDateTimeStart', 'asc');
+                knexInstance.raw('COUNT(DISTINCT EventOccurrences.EventOccurrenceID) as occurrence_count'),
+                knexInstance.raw('MIN(EventOccurrences.EventDateTimeStart) as earliest_date'),
+                knexInstance.raw('MAX(EventOccurrences.EventDateTimeStart) as latest_date'),
+                knexInstance.raw('array_agg(DISTINCT EventOccurrences.EventLocation) as locations')
+            );
+        
+        // Apply time-based filter
+        const now = knexInstance.fn.now();
+        if (filter === 'future') {
+            query = query.where('EventOccurrences.EventDateTimeStart', '>=', now);
+        } else if (filter === 'past') {
+            query = query.where('EventOccurrences.EventDateTimeStart', '<', now);
+        }
+        
+        const groupedEvents = await query
+            .groupBy('EventOccurrences.EventName', 'EventTemplate.EventType')
+            .orderBy('EventOccurrences.EventName', 'asc');
+        
+        // Get total participant counts for each event name
+        const eventsWithCounts = await Promise.all(groupedEvents.map(async (event) => {
+            // Get all occurrences for this event name
+            let occurrenceQuery = knexInstance('EventOccurrences')
+                .where('EventOccurrences.EventName', event.EventName || event.eventname)
+                .select('EventOccurrences.EventOccurrenceID');
+            
+            if (filter === 'future') {
+                occurrenceQuery = occurrenceQuery.where('EventOccurrences.EventDateTimeStart', '>=', now);
+            } else if (filter === 'past') {
+                occurrenceQuery = occurrenceQuery.where('EventOccurrences.EventDateTimeStart', '<', now);
+            }
+            
+            const occurrences = await occurrenceQuery;
+            const occurrenceIds = occurrences.map(o => o.EventOccurrenceID || o.eventoccurrenceid);
+            
+            // Count total participants across all occurrences
+            let totalParticipants = 0;
+            if (occurrenceIds.length > 0) {
+                const participantCount = await knexInstance('EventRegistrations')
+                    .whereIn('EventOccurrenceID', occurrenceIds)
+                    .count('RegistrationID as count')
+                    .first();
+                totalParticipants = participantCount ? (parseInt(participantCount.count) || 0) : 0;
+            }
+            
+            // Determine if event is past (check earliest date)
+            const earliestDate = event.earliest_date || event.earliest_date;
+            const isPast = earliestDate ? new Date(earliestDate) < new Date() : false;
+            
+            // Format locations array
+            const locations = Array.isArray(event.locations) ? event.locations.filter(l => l) : [];
+            const locationDisplay = locations.length > 0 ? locations.join(', ') : 'TBA';
+            
+            return {
+                EventName: event.EventName || event.eventname,
+                EventType: event.EventType || event.event_type || 'N/A',
+                participantCount: totalParticipants,
+                occurrenceCount: parseInt(event.occurrence_count) || 1,
+                earliestDate: earliestDate,
+                latestDate: event.latest_date || event.latest_date,
+                location: locationDisplay,
+                isPast: isPast
+            };
+        }));
+        
         res.render(viewPath, {
             title: 'Events - Ella Rises',
             user: user,
-            events: events || [],
+            events: eventsWithCounts || [],
+            filter: filter,
             messages: req.session.messages || []
         });
         req.session.messages = [];
@@ -1015,6 +1149,7 @@ router.get('/events', requireAuth, async (req, res) => {
             title: 'Events - Ella Rises',
             user: user,
             events: [],
+            filter: filter,
             messages: [{ type: 'info', text: 'Database not connected. Events will appear here once the database is set up.' }]
         });
         req.session.messages = [];
@@ -1145,7 +1280,7 @@ router.get('/my-surveys', requireAuth, async (req, res) => {
 });
 
 router.get('/surveys', async (req, res) => {
-    // Manager-only view - shows all surveys
+    // Manager-only view - shows all surveys grouped by event name (ignoring dates)
     const user = req.session.user || null;
     const isManager = user && user.role === 'manager';
     
@@ -1159,16 +1294,37 @@ router.get('/surveys', async (req, res) => {
     }
     
     try {
-        // Get all surveys (matching FInalTableCreation.sql schema)
-        const surveys = await knexInstance('Surveys')
+        // Group surveys by EventName (ignoring dates), aggregate dates
+        const surveyGroups = await knexInstance('Surveys')
             .join('EventRegistrations', 'Surveys.RegistrationID', 'EventRegistrations.RegistrationID')
-            .join('People', 'EventRegistrations.PersonID', 'People.PersonID')
-            .select('Surveys.*', 'People.FirstName', 'People.LastName')
-            .orderBy('Surveys.SurveySubmissionDate', 'desc');
+            .join('EventOccurrences', 'EventRegistrations.EventOccurrenceID', 'EventOccurrences.EventOccurrenceID')
+            .select(
+                'EventOccurrences.EventName',
+                knexInstance.raw('COUNT(Surveys.SurveyID) as survey_count'),
+                knexInstance.raw('AVG(Surveys.SurveySatisfactionScore) as avg_satisfaction'),
+                knexInstance.raw('AVG(Surveys.SurveyUsefulnessScore) as avg_usefulness'),
+                knexInstance.raw('AVG(Surveys.SurveyRecommendationScore) as avg_recommendation'),
+                knexInstance.raw('AVG(Surveys.SurveyOverallScore) as avg_overall'),
+                knexInstance.raw("array_agg(DISTINCT EventOccurrences.EventDateTimeStart::text ORDER BY EventOccurrences.EventDateTimeStart DESC) as available_dates")
+            )
+            .groupBy('EventOccurrences.EventName')
+            .orderBy('EventOccurrences.EventName', 'asc');
+        
+        // Process dates array for each group
+        const processedGroups = surveyGroups.map(group => ({
+            eventName: group.EventName || group.eventname,
+            survey_count: parseInt(group.survey_count) || 0,
+            avg_satisfaction: group.avg_satisfaction ? parseFloat(group.avg_satisfaction) : null,
+            avg_usefulness: group.avg_usefulness ? parseFloat(group.avg_usefulness) : null,
+            avg_recommendation: group.avg_recommendation ? parseFloat(group.avg_recommendation) : null,
+            avg_overall: group.avg_overall ? parseFloat(group.avg_overall) : null,
+            dates: Array.isArray(group.available_dates) ? group.available_dates : (group.available_dates ? [group.available_dates] : [])
+        }));
+        
         res.render('manager/surveys', {
             title: 'Post-Event Surveys - Ella Rises',
             user: user,
-            surveys: surveys,
+            surveyGroups: processedGroups || [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
@@ -1177,7 +1333,7 @@ router.get('/surveys', async (req, res) => {
         res.render('manager/surveys', {
             title: 'Post-Event Surveys - Ella Rises',
             user: user,
-            surveys: [],
+            surveyGroups: [],
             messages: [{ type: 'error', text: 'Error loading surveys.' }]
         });
         req.session.messages = [];
@@ -1284,11 +1440,18 @@ router.get('/milestones', requireAuth, async (req, res) => {
         let milestones;
         
         if (isManager) {
-            // Managers see all milestones (matching FInalTableCreation.sql schema)
+            // Managers see aggregated milestones by type (only for participants)
             milestones = await knexInstance('Milestones')
                 .join('People', 'Milestones.PersonID', 'People.PersonID')
-                .select('Milestones.*', 'People.FirstName', 'People.LastName')
-                .orderBy('Milestones.MilestoneDate', 'desc');
+                .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
+                .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
+                .where('Roles.RoleName', 'Participant')
+                .select(
+                    'Milestones.MilestoneTitle',
+                    knexInstance.raw('COUNT(DISTINCT Milestones.PersonID) as count_participants')
+                )
+                .groupBy('Milestones.MilestoneTitle')
+                .orderBy('Milestones.MilestoneTitle', 'asc');
         } else {
             // Regular users see only their own milestones
             const userId = user.id;
@@ -1518,10 +1681,19 @@ router.get('/donations', requireAuth, async (req, res) => {
     const viewPath = isManager ? 'manager/donations' : 'user/donations';
     
     try {
-        // Get donations with person info (matching FInalTableCreation.sql schema)
+        // Get donations - use People.Email (Donations table doesn't have DonorEmail column)
+        // Always use Donations.DonationDate for the date
         const donations = await knexInstance('Donations')
-            .join('People', 'Donations.PersonID', 'People.PersonID')
-            .select('Donations.*', 'People.FirstName', 'People.LastName')
+            .leftJoin('People', 'Donations.PersonID', 'People.PersonID')
+            .select(
+                'Donations.DonationID',
+                'Donations.PersonID',
+                'Donations.DonationDate',
+                'Donations.DonationAmount',
+                'People.FirstName',
+                'People.LastName',
+                'People.Email'
+            )
             .orderBy('Donations.DonationDate', 'desc');
         
         res.render(viewPath, {

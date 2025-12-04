@@ -14,19 +14,48 @@
     <table aria-label="Donations">
         <thead>
             <tr>
-                <th scope="col">ID</th>
                 <th scope="col">Donor Name</th>
                 <th scope="col">Email</th>
                 <th scope="col">Amount</th>
-                <th scope="col">Payment Method</th>
                 <th scope="col">Date</th>
             </tr>
         </thead>
         <tbody id="donations-table-body">
-            <!-- Donations populated from database -->
-            <tr>
-                <td colspan="6" class="text-center" role="status" aria-live="polite">No donations found.</td>
-            </tr>
+            <% if (typeof donations !== 'undefined' && donations.length > 0) { %>
+                <% donations.forEach(function(donation) { %>
+                    <tr>
+                        <td>
+                            <% 
+                                const donorName = (donation.FirstName || donation.firstname || donation.firstName || '') + ' ' + (donation.LastName || donation.lastname || donation.lastName || '');
+                                const displayName = donorName.trim() || 'Unknown';
+                            %>
+                            <%= displayName %>
+                        </td>
+                        <td><%= (donation.Email || donation.email || '').trim() || '' %></td>
+                        <td>$<%= parseFloat(donation.DonationAmount || donation.donationamount || donation.amount || 0).toFixed(2) %></td>
+                        <td>
+                            <% 
+                                const donationDate = donation.DonationDate || donation.donationdate;
+                                if (donationDate) {
+                                    try {
+                                        const date = new Date(donationDate);
+                                        const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            %>
+                                <%= formattedDate %>
+                            <%  } catch(e) { %>
+                                <%= donationDate %>
+                            <%  }
+                                } else { %>
+                                N/A
+                            <% } %>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="4" class="text-center" role="status" aria-live="polite">No donations found.</td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>

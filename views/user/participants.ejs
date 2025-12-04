@@ -14,19 +14,25 @@
     <table aria-label="Participants">
         <thead>
             <tr>
-                <th scope="col">ID</th>
                 <th scope="col">Name</th>
                 <th scope="col">Email</th>
-                <th scope="col">Phone</th>
-                <th scope="col">Program</th>
-                <th scope="col">Enrollment Date</th>
+                <th scope="col">Location</th>
             </tr>
         </thead>
         <tbody id="participants-table-body">
-            <!-- Participants populated from database -->
-            <tr>
-                <td colspan="6" class="text-center" role="status" aria-live="polite">No participants found.</td>
-            </tr>
+            <% if (typeof participants !== 'undefined' && participants.length > 0) { %>
+                <% participants.forEach(function(participant) { %>
+                    <tr>
+                        <td><%= (participant.FirstName || participant.firstname || '').trim() + ' ' + (participant.LastName || participant.lastname || '').trim() %></td>
+                        <td><%= participant.Email || participant.email || '' %></td>
+                        <td><%= (participant.City || participant.city || '') + (participant.State || participant.state ? ', ' + participant.State : '') %></td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="3" class="text-center" role="status" aria-live="polite">No participants found.</td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>

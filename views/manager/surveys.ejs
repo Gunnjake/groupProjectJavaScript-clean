@@ -2,53 +2,65 @@
 
 <div class="page-header">
     <h1>Post-Event Surveys</h1>
-    <p>Manage post-event survey responses</p>
+    <p>View survey responses grouped by event</p>
 </div>
 
 <div class="search-container">
-    <label for="search-input" class="sr-only">Search surveys</label>
-    <input type="text" id="search-input" class="search-input" placeholder="Search surveys by participant, event, or satisfaction score..." aria-label="Search surveys by participant, event, or satisfaction score">
+    <label for="search-input" class="sr-only">Search events</label>
+    <input type="text" id="search-input" class="search-input" placeholder="Search events by name..." aria-label="Search events by name">
     <a href="/surveys/new" class="btn btn-primary" aria-label="Add new survey">Add New Survey</a>
 </div>
 
-<div class="table-container" role="region" aria-label="Surveys table">
-    <table aria-label="Surveys">
+<div class="table-container" role="region" aria-label="Surveys by event table">
+    <table aria-label="Surveys by Event">
         <thead>
             <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Participant</th>
-                <th scope="col">Event</th>
-                <th scope="col">Satisfaction</th>
-                <th scope="col">Usefulness</th>
-                <th scope="col">Recommendation</th>
-                <th scope="col">Date</th>
+                <th scope="col">Event Name</th>
+                <th scope="col">Available Dates</th>
+                <th scope="col"># Surveys</th>
+                <th scope="col">Avg Satisfaction</th>
+                <th scope="col">Avg Usefulness</th>
+                <th scope="col">Avg Recommendation</th>
                 <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody id="surveys-table-body">
-            <% if (typeof surveys !== 'undefined' && surveys.length > 0) { %>
-                <% surveys.forEach(function(survey) { %>
+            <% if (typeof surveyGroups !== 'undefined' && surveyGroups.length > 0) { %>
+                <% surveyGroups.forEach(function(group) { %>
                     <tr>
-                        <td><%= survey.SurveyID || survey.surveyid || survey.id %></td>
-                        <td>N/A</td>
-                        <td><%= survey.eventName || survey.EventName || 'N/A' %></td>
-                        <td><%= survey.SurveySatisfactionScore || survey.surveysatisfactionscore || survey.satisfaction_score || 'N/A' %></td>
-                        <td><%= survey.SurveyUsefulnessScore || survey.surveyusefulnessscore || survey.usefulness_score || 'N/A' %></td>
-                        <td><%= survey.SurveyRecommendationScore || survey.surveyrecommendationscore || survey.recommendation_score || 'N/A' %></td>
+                        <td><%= group.eventName || group.EventName || 'N/A' %></td>
                         <td>
-                            <%= survey.SurveySubmissionDate ? new Date(survey.SurveySubmissionDate).toLocaleDateString() : (survey.surveysubmissiondate ? new Date(survey.surveysubmissiondate).toLocaleDateString() : 'N/A') %>
+                            <% if (group.dates && group.dates.length > 0) { %>
+                                <select class="date-filter" style="min-width: 150px; padding: 0.25rem 0.5rem; border: 1px solid var(--border-light); border-radius: 4px;">
+                                    <option value="">All Dates</option>
+                                    <% group.dates.forEach(function(dateStr) { %>
+                                        <% 
+                                            try {
+                                                const date = new Date(dateStr);
+                                                const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                        %>
+                                            <option value="<%= dateStr %>"><%= formattedDate %></option>
+                                        <% } catch(e) { %>
+                                            <option value="<%= dateStr %>"><%= dateStr %></option>
+                                        <% } %>
+                                    <% }); %>
+                                </select>
+                            <% } else { %>
+                                <span style="color: var(--text-secondary);">No dates</span>
+                            <% } %>
                         </td>
+                        <td><%= group.survey_count || 0 %></td>
+                        <td><%= group.avg_satisfaction ? group.avg_satisfaction.toFixed(2) : 'N/A' %></td>
+                        <td><%= group.avg_usefulness ? group.avg_usefulness.toFixed(2) : 'N/A' %></td>
+                        <td><%= group.avg_recommendation ? group.avg_recommendation.toFixed(2) : 'N/A' %></td>
                         <td>
-                            <a href="/surveys/<%= survey.SurveyID || survey.surveyid || survey.id %>/edit" class="btn btn-sm btn-secondary" aria-label="Edit survey">Edit</a>
-                            <form action="/surveys/<%= survey.SurveyID || survey.surveyid || survey.id %>/delete" method="POST" style="display: inline;">
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this survey?');" aria-label="Delete survey">Delete</button>
-                            </form>
+                            <a href="/surveys/event/<%= group.eventName || group.EventName %>" class="btn btn-sm btn-secondary" aria-label="View details">View Details</a>
                         </td>
                     </tr>
                 <% }); %>
             <% } else { %>
                 <tr>
-                    <td colspan="8" class="text-center" role="status" aria-live="polite">No surveys found. Add a survey to get started.</td>
+                    <td colspan="7" class="text-center" role="status" aria-live="polite">No survey data found. Surveys will appear here once submitted.</td>
                 </tr>
             <% } %>
         </tbody>
@@ -57,23 +69,26 @@
 
 <script>
     // Search functionality with screen reader support
-    document.getElementById('search-input').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('#surveys-table-body tr');
-        let visibleCount = 0;
-        
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            const isVisible = text.includes(searchTerm);
-            row.style.display = isVisible ? '' : 'none';
-            if (isVisible) visibleCount++;
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#surveys-table-body tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const isVisible = text.includes(searchTerm);
+                row.style.display = isVisible ? '' : 'none';
+                if (isVisible) visibleCount++;
+            });
+            
+            const status = document.querySelector('#surveys-table-body [role="status"]');
+            if (status && visibleCount > 0) {
+                status.textContent = `${visibleCount} event${visibleCount === 1 ? '' : 's'} found`;
+            }
         });
-        
-        const status = document.querySelector('#surveys-table-body [role="status"]');
-        if (status && visibleCount > 0) {
-            status.textContent = `${visibleCount} survey${visibleCount === 1 ? '' : 's'} found`;
-        }
-    });
+    }
 </script>
 
 <%- include('../partials/footer') %>
