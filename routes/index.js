@@ -314,100 +314,79 @@ router.get('/test-login', (req, res) => {
     `);
 });
 
-// ============================================================================
-// TEST LOGIN QUERY ROUTES (SHOW EVERYTHING FOR AN EMAIL)
-// ============================================================================
-
-// GET - shows form + optional results
-router.get('/test-login-query', (req, res) => {
+// ===============================
+// TEST LOGIN QUERY PAGE (GET)
+// ===============================
+router.get('/test-login-query', async (req, res) => {
     res.render('test/query-test', {
-        title: 'Query Testing - Ella Rises',
-        user: req.session.user || null,
-
-        // No results yet
-        results: null,
-        actualQuery: null,
+        title: "Query Testing - Ella Rises",
+        emailInput: "",
         error: null,
-        emailInput: ""
+        actualQuery: null,
+        results: null
     });
 });
 
-// POST - Search email and show everything
+// ===============================
+// TEST LOGIN QUERY (POST)
+// ===============================
 router.post('/test-login-query', async (req, res) => {
-    const email = req.body.email;
+    const email = req.body.email || '';
 
-    const sqlQuery = `
-SELECT
-    p.*,
+    const sql = `
+        SELECT
+            p.personid,
+            p.email,
+            p.firstname,
+            p.lastname,
 
-    r.roleid,
-    r.rolename,
+            CASE
+                WHEN ad.password IS NOT NULL THEN 'Admin'
+                WHEN vd.password IS NOT NULL THEN 'Volunteer'
+                WHEN pd.password IS NOT NULL THEN 'Participant'
+                ELSE 'Unknown'
+            END AS detectedRole,
 
-    ad.adminrole,
-    ad.salary,
-    ad.password AS adminpassword,
+            COALESCE(ad.password, vd.password, pd.password) AS detectedPassword,
 
-    vd.volunteerrole,
-    vd.password AS volunteerpassword,
+            ad.adminrole,
+            ad.salary,
+            vd.volunteerrole,
+            pd.participantschooloremployer,
+            pd.participantfieldofinterest,
+            pd.newsletter
 
-    pd.participantschooloremployer,
-    pd.participantfieldofinterest,
-    pd.newsletter,
-    pd.password AS participantpassword
-
-FROM people p
-LEFT JOIN peopleroles pr ON p.personid = pr.personid
-LEFT JOIN roles r ON pr.roleid = r.roleid
-LEFT JOIN admindetails ad ON p.personid = ad.personid
-LEFT JOIN volunteerdetails vd ON p.personid = vd.personid
-LEFT JOIN participantdetails pd ON p.personid = pd.personid
-WHERE p.email = ?
+        FROM people p
+        LEFT JOIN admindetails ad ON p.personid = ad.personid
+        LEFT JOIN volunteerdetails vd ON p.personid = vd.personid
+        LEFT JOIN participantdetails pd ON p.personid = pd.personid
+        WHERE p.email = ?
+        LIMIT 1
     `;
 
     try {
-        const queryResult = await knexInstance.raw(sqlQuery, [email]);
-        
-        // Debug: log the full result structure
-        console.log('Query result structure:', {
-            hasRows: !!queryResult.rows,
-            rowsLength: queryResult.rows ? queryResult.rows.length : 0,
-            firstRow: queryResult.rows && queryResult.rows.length > 0 ? queryResult.rows[0] : null,
-            fullResult: queryResult
-        });
+        const result = await knexInstance.raw(sql, [email]);
+        const rows = result.rows || [];
 
-        // Handle different result structures (PostgreSQL returns rows array)
-        const rows = queryResult.rows || queryResult || [];
-        
-        // Create a comprehensive result object that shows everything
-        const displayResults = {
-            emailSearched: email,
-            rowCount: rows.length,
-            rows: rows,
-            rawResultStructure: {
-                hasRows: !!queryResult.rows,
-                keys: Object.keys(queryResult),
-                rowsType: Array.isArray(rows) ? 'array' : typeof rows
-            }
-        };
-
-        return res.render('test/query-test', {
+        res.render('test/query-test', {
             title: "Query Testing - Ella Rises",
-            user: req.session.user || null,
-            results: displayResults,
-            actualQuery: sqlQuery.replace("?", `'${email.replace(/'/g, "''")}'`),
-            error: rows.length === 0 ? `No records found for email: ${email}` : null,
-            emailInput: email
+            emailInput: email,
+            error: null,
+            actualQuery: sql.replace("?", `'${email.replace(/'/g, "''")}'`),
+            results: {
+                emailSearched: email,
+                rowCount: rows.length,
+                rows
+            }
         });
 
     } catch (err) {
-        console.error('Query error:', err);
-        return res.render('test/query-test', {
+        res.render('test/query-test', {
             title: "Query Testing - Ella Rises",
-            user: req.session.user || null,
-            results: null,
-            actualQuery: sqlQuery.replace("?", `'${email.replace(/'/g, "''")}'`),
+            emailInput: email,
             error: err.message,
-            emailInput: email
+            actualQuery: sql.replace("?", `'${email.replace(/'/g, "''")}'`),
+            results: null
         });
     }
 });
@@ -418,56 +397,68 @@ router.post('/login', async (req, res) => {
     const sPassword = req.body.password;
 
     try {
-        // Single query using COALESCE to get password from appropriate detail table
-        const user = await knexInstance('people')
-            .select(
-                'people.personid',
-                'people.email',
-                'people.firstname',
-                'people.lastname',
-                'roles.roleid',
-                'roles.rolename',
-                // COALESCE takes the first non-null value from the three detail tables
-                knexInstance.raw('COALESCE(admindetails.password, volunteerdetails.password, participantdetails.password) as stored_password'),
-                'admindetails.adminrole',
-                'admindetails.salary',
-                'volunteerdetails.volunteerrole',
-                'participantdetails.participantschooloremployer',
-                'participantdetails.participantfieldofinterest',
-                'participantdetails.newsletter'
-            )
-            // Join roles through PeopleRoles junction table
-            .innerJoin('peopleroles', 'people.personid', 'peopleroles.personid')
-            .innerJoin('roles', 'peopleroles.roleid', 'roles.roleid')
-            // LEFT JOIN allows user to exist in any of the detail tables
-            .leftJoin('admindetails', 'people.personid', 'admindetails.personid')
-            .leftJoin('volunteerdetails', 'people.personid', 'volunteerdetails.personid')
-            .leftJoin('participantdetails', 'people.personid', 'participantdetails.personid')
-            .where('people.email', sEmail)
-            .first();
+        // Query using role detection based on which detail table has a password
+        const sql = `
+            SELECT
+                p.personid,
+                p.email,
+                p.firstname,
+                p.lastname,
+
+                CASE
+                    WHEN ad.password IS NOT NULL THEN 'Admin'
+                    WHEN vd.password IS NOT NULL THEN 'Volunteer'
+                    WHEN pd.password IS NOT NULL THEN 'Participant'
+                    ELSE 'Unknown'
+                END AS detectedRole,
+
+                COALESCE(ad.password, vd.password, pd.password) AS detectedPassword,
+
+                ad.adminrole,
+                ad.salary,
+                vd.volunteerrole,
+                pd.participantschooloremployer,
+                pd.participantfieldofinterest,
+                pd.newsletter
+
+            FROM people p
+            LEFT JOIN admindetails ad ON p.personid = ad.personid
+            LEFT JOIN volunteerdetails vd ON p.personid = vd.personid
+            LEFT JOIN participantdetails pd ON p.personid = pd.personid
+            WHERE p.email = ?
+            LIMIT 1
+        `;
+
+        const result = await knexInstance.raw(sql, [sEmail]);
+        const rows = result.rows || [];
+        const user = rows.length > 0 ? rows[0] : null;
 
         if (!user) {
             return res.render("auth/login", { error_message: "Invalid email or password" });
         }
 
+        // Check if password exists
+        if (!user.detectedpassword) {
+            return res.render("auth/login", { error_message: "Invalid email or password" });
+        }
+
         // Direct string comparison (no bcrypt)
-        const match = user.stored_password === sPassword;
+        const match = user.detectedpassword === sPassword;
         
         if (!match) {
             return res.render("auth/login", { error_message: "Invalid email or password" });
         }
 
-        // Build role-specific details object
+        // Build role-specific details object based on detected role
         const roleDetails = {};
-        if (user.roleid === 1) {
-            // Admin
+        const detectedRole = user.detectedrole ? user.detectedrole.toLowerCase() : 'unknown';
+        
+        if (detectedRole === 'admin') {
             roleDetails.AdminRole = user.adminrole;
             roleDetails.Salary = user.salary;
-        } else if (user.roleid === 2) {
-            // Volunteer
+        } else if (detectedRole === 'volunteer') {
             roleDetails.VolunteerRole = user.volunteerrole;
-        } else if (user.roleid === 3) {
-            // Participant
+        } else if (detectedRole === 'participant') {
             roleDetails.ParticipantSchoolOrEmployer = user.participantschooloremployer;
             roleDetails.ParticipantFieldOfInterest = user.participantfieldofinterest;
             roleDetails.NewsLetter = user.newsletter;
@@ -482,9 +473,8 @@ router.post('/login', async (req, res) => {
             email: user.email,
             firstName: user.firstname,
             lastName: user.lastname,
-            role: user.rolename && user.rolename.toLowerCase() === 'admin' ? 'manager' : 'user',
-            RoleID: user.roleid,
-            RoleName: user.rolename,
+            role: detectedRole === 'admin' ? 'manager' : 'user',
+            RoleName: user.detectedrole,
             RoleDetails: roleDetails
         };
 
