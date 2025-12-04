@@ -163,14 +163,14 @@
                     <legend class="section-header">Create Account</legend>
                     <div class="form-row">
                     <div class="form-group form-group-half">
-                        <label for="password">Create Password <span aria-label="required">*</span></label>
-                        <input type="password" id="password" name="password" required aria-describedby="password-hint" aria-required="true" autocomplete="new-password" maxlength="20">
-                        <small id="password-hint" class="field-hint">Maximum 20 characters</small>
+                        <label for="password">Create Password (Optional)</label>
+                        <input type="password" id="password" name="password" aria-describedby="password-hint" autocomplete="new-password" maxlength="20">
+                        <small id="password-hint" class="field-hint">Maximum 20 characters. You can set this later if you prefer.</small>
                     </div>
                     <div class="form-group form-group-half">
-                        <label for="confirmPassword">Confirm Password <span aria-label="required">*</span></label>
-                        <input type="password" id="confirmPassword" name="confirmPassword" required aria-describedby="confirm-password-hint" aria-required="true" autocomplete="new-password" maxlength="20">
-                        <small id="confirm-password-hint" class="field-hint">Re-enter your password</small>
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" aria-describedby="confirm-password-hint" autocomplete="new-password" maxlength="20">
+                        <small id="confirm-password-hint" class="field-hint">Re-enter your password if provided</small>
                     </div>
                     </div>
                 </fieldset>
@@ -206,15 +206,43 @@ document.getElementById('registration-form')?.addEventListener('submit', functio
     const password = document.getElementById('password');
     const confirmPassword = document.getElementById('confirmPassword');
     
+    // Only validate if password fields are present and at least one has a value
     if (password && confirmPassword) {
-        if (password.value !== confirmPassword.value) {
-            e.preventDefault();
-            alert('Passwords do not match. Please try again.');
-            confirmPassword.focus();
-            return false;
-        }
+        const hasPassword = password.value.trim().length > 0;
+        const hasConfirmPassword = confirmPassword.value.trim().length > 0;
         
-        // Password can be any length - validation removed
+        // If password is provided, confirm password must match
+        if (hasPassword || hasConfirmPassword) {
+            if (password.value !== confirmPassword.value) {
+                e.preventDefault();
+                alert('Passwords do not match. Please try again.');
+                confirmPassword.focus();
+                return false;
+            }
+            
+            // Validate password length if provided
+            if (hasPassword && password.value.length > 20) {
+                e.preventDefault();
+                alert('Password must be 20 characters or less.');
+                password.focus();
+                return false;
+            }
+        }
+    }
+    
+    // Validate required fields
+    const firstName = document.getElementById('firstName');
+    const lastName = document.getElementById('lastName');
+    const email = document.getElementById('email');
+    const phone = document.getElementById('phone');
+    const age = document.getElementById('age');
+    const program = document.getElementById('program');
+    
+    if (!firstName?.value?.trim() || !lastName?.value?.trim() || !email?.value?.trim() || 
+        !phone?.value?.trim() || !age?.value || !program?.value) {
+        e.preventDefault();
+        alert('Please fill in all required fields (marked with *).');
+        return false;
     }
 });
 </script>

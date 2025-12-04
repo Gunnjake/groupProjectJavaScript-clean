@@ -127,21 +127,6 @@ router.post('/register', async (req, res) => {
             const userId = req.session.user.id;
             // TODO: Save registration to DB
             
-            // Subscribe to newsletter if checked
-            // if (newsletter === 'yes') {
-            //     try {
-            //         await db('NewsletterSubscriptions').insert({
-            //             Email: email,
-            //             FirstName: firstName,
-            //             LastName: lastName,
-            //             SubscriptionDate: new Date(),
-            //             IsActive: true
-            //         }).onConflict('Email').merge({ IsActive: true, SubscriptionDate: new Date() });
-            //     } catch (newsletterError) {
-            //         console.error('Newsletter subscription error:', newsletterError);
-            //     }
-            // }
-            
             req.session.messages = [{ 
                 type: 'success', 
                 text: `Thank you! You've been registered for ${program}.` 
@@ -149,115 +134,153 @@ router.post('/register', async (req, res) => {
             return res.redirect('/register');
         }
         
-        // Validate password exists (any length allowed)
-        if (!password) {
+        // Validate required fields
+        if (!firstName || !lastName || !email) {
             req.session.messages = [{ 
                 type: 'error', 
-                text: 'Password is required.' 
+                text: 'First name, last name, and email are required.' 
             }];
             return res.redirect('/register');
         }
         
-        if (password !== confirmPassword) {
+        // Check email uniqueness
+        const existingUser = await knexInstance('people')
+            .where('email', email.toLowerCase().trim())
+            .first();
+        
+        if (existingUser) {
             req.session.messages = [{ 
                 type: 'error', 
-                text: 'Passwords do not match.' 
+                text: 'An account with this email already exists. Please login instead.' 
             }];
-            return res.redirect('/register');
+            return res.redirect('/login');
         }
         
-        // Create person + participant + registration in DB (matching FInalTableCreation.sql schema)
+        // Validate password if provided (password is optional during registration)
+        if (password) {
+            if (password !== confirmPassword) {
+                req.session.messages = [{ 
+                    type: 'error', 
+                    text: 'Passwords do not match.' 
+                }];
+                return res.redirect('/register');
+            }
+            if (password.length > 20) {
+                req.session.messages = [{ 
+                    type: 'error', 
+                    text: 'Password must be 20 characters or less.' 
+                }];
+                return res.redirect('/register');
+            }
+        }
+        
+        // Prepare state (2-character, uppercase)
+        let stateValue = null;
+        if (state) {
+            stateValue = state.trim().toUpperCase().substring(0, 2);
+            if (stateValue.length !== 2) {
+                stateValue = null; // Invalid state, set to null
+            }
+        }
+        
+        console.log('[REGISTER] Starting registration for:', email);
+        
         // Step 1: Create person record in People table
-        // const birthdateValue = birthdate || (age ? new Date(new Date().getFullYear() - parseInt(age), 0, 1) : null);
-        // const newPerson = await db('People').insert({
-        //     Email: email,
-        //     FirstName: firstName,
-        //     LastName: lastName,
-        //     Birthdate: birthdateValue,
-        //     PhoneNumber: phone,
-        //     City: city,
-        //     State: state,
-        //     Zip: zip,
-        //     Country: 'USA'
-        // }).returning('PersonID');
-        // 
-        // const personId = newPerson[0].PersonID;
-        // 
-        // // Step 2: Get or create Participant role
-        // let participantRole = await db('Roles').where({ RoleName: 'Participant' }).first();
-        // if (!participantRole) {
-        //     participantRole = await db('Roles').insert({ RoleName: 'Participant' }).returning('*')[0];
-        // }
-        // 
-        // // Step 3: Assign Participant role to person
-        // await db('PeopleRoles').insert({
-        //     PersonID: personId,
-        //     RoleID: participantRole.RoleID
-        // });
-        // 
-        // // Step 4: Create participant details record
-        // const passwordHash = await bcrypt.hash(password, 10);
-        // await db('ParticipantDetails').insert({
-        //     PersonID: personId,
-        //     ParticipantSchoolOrEmployer: school || null,
-        //     ParticipantFieldOfInterest: fieldOfInterest || null,
-        //     Password: passwordHash,
-        //     NewsLetter: newsletter === 'yes' ? 1 : 0
-        // });
-        // 
-        // // Step 5: Find event template for the program
-        // const programEvent = await db('EventTemplate').where({ EventName: program }).first();
-        // if (programEvent) {
-        //     // Find or create an event occurrence for registration
-        //     // For now, register to the first upcoming occurrence or create one
-        //     let eventOccurrence = await db('EventOccurrences')
-        //         .where({ EventTemplateID: programEvent.EventTemplateID })
-        //         .where('EventDateTimeStart', '>', new Date())
-        //         .orderBy('EventDateTimeStart', 'asc')
-        //         .first();
-        //     
-        //     if (!eventOccurrence) {
-        //         // Create a default occurrence if none exists
-        //         eventOccurrence = await db('EventOccurrences').insert({
-        //             EventTemplateID: programEvent.EventTemplateID,
-        //             EventName: program,
-        //             EventDateTimeStart: new Date(),
-        //             EventDateTimeEnd: new Date(),
-        //             EventLocation: 'TBD',
-        //             EventCapacity: programEvent.EventDefaultCapacity || 50
-        //         }).returning('*')[0];
-        //     }
-        //     
-        //     // Step 6: Create registration
-        //     await db('EventRegistrations').insert({
-        //         PersonID: personId,
-        //         EventOccurrenceID: eventOccurrence.EventOccurrenceID,
-        //         RegistrationStatus: 'Registered',
-        //         RegistrationAttendedFlag: 0,
-        //         RegistrationCreatedAt: new Date()
-        //     });
-        // }
+        const [newPerson] = await knexInstance('people')
+            .insert({
+                firstname: firstName.trim(),
+                lastname: lastName.trim(),
+                email: email.toLowerCase().trim(),
+                phonenumber: phone ? phone.trim() : null,
+                city: city ? city.trim() : null,
+                state: stateValue,
+                zip: zip ? zip.trim() : null,
+                country: 'USA'
+            })
+            .returning(['personid', 'email']);
         
-        // Auto-login the new user
-        // req.session.user = {
-        //     id: newUser[0].UserID,
-        //     username: newUser[0].Username,
-        //     email: newUser[0].Email,
-        //     role: newUser[0].Role,
-        //     firstName: firstName,
-        //     lastName: lastName
-        // };
+        if (!newPerson || !newPerson.personid) {
+            throw new Error('Failed to create person record - no personid returned');
+        }
         
-        req.session.messages = [{ 
-            type: 'success', 
-            text: `Account created successfully! You've been registered for ${program}. You can now login to view your registrations.` 
-        }];
-        res.redirect('/login');
+        const personId = newPerson.personid;
+        console.log('[REGISTER] Created person with personid:', personId);
+        
+        // Step 2: Insert into PeopleRoles with Participant role (roleid 1)
+        await knexInstance('peopleroles')
+            .insert({
+                personid: personId,
+                roleid: 1 // Participant
+            })
+            .onConflict(['personid', 'roleid'])
+            .ignore();
+        
+        console.log('[REGISTER] Added Participant role for personid:', personId);
+        
+        // Step 3: Create participant details record (password optional)
+        const participantDetailsData = {
+            personid: personId,
+            participantschooloremployer: school ? school.trim() : null,
+            participantfieldofinterest: fieldOfInterest ? fieldOfInterest.trim() : null,
+            newsletter: newsletter === 'yes' ? true : false
+        };
+        
+        // Only add password if provided during registration
+        if (password) {
+            participantDetailsData.password = password; // Store raw password (VARCHAR(20))
+        }
+        
+        // Check if participantdetails already exists
+        const existingParticipantDetails = await knexInstance('participantdetails')
+            .where('personid', personId)
+            .first();
+        
+        if (existingParticipantDetails) {
+            // Update existing record
+            await knexInstance('participantdetails')
+                .where('personid', personId)
+                .update(participantDetailsData);
+        } else {
+            // Insert new record
+            await knexInstance('participantdetails')
+                .insert(participantDetailsData);
+        }
+        
+        console.log('[REGISTER] Created/updated participant details for personid:', personId);
+        
+        // Success message
+        if (password) {
+            req.session.messages = [{ 
+                type: 'success', 
+                text: `Account created successfully! You can now login with your email and password.` 
+            }];
+            res.redirect('/login');
+        } else {
+            req.session.messages = [{ 
+                type: 'success', 
+                text: `Account created successfully! Please set your password to complete registration.` 
+            }];
+            res.redirect(`/create-password/${personId}`);
+        }
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('[REGISTER] Registration error:', error);
+        console.error('[REGISTER] Error details:', {
+            message: error.message,
+            code: error.code,
+            detail: error.detail,
+            constraint: error.constraint
+        });
+        
+        let errorMessage = 'There was an error processing your registration. Please try again.';
+        if (error.code === '23505') { // Unique violation
+            errorMessage = 'An account with this email already exists. Please login instead.';
+        } else if (error.constraint) {
+            errorMessage = `Database error: ${error.constraint}`;
+        }
+        
         req.session.messages = [{ 
             type: 'error', 
-            text: 'There was an error processing your registration. Please try again.' 
+            text: errorMessage 
         }];
         res.redirect('/register');
     }
@@ -406,13 +429,26 @@ router.post('/test-login-query', async (req, res) => {
 router.post('/login-email', async (req, res) => {
     const email = req.body.email;
 
+    if (!email || !email.trim()) {
+        return res.render("auth/login", { 
+            error_message: "Email is required.",
+            user: null,
+            messages: []
+        });
+    }
+
     try {
+        // Normalize email (lowercase, trim)
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        console.log('[LOGIN-EMAIL] Checking email:', normalizedEmail);
+        
         // Query using LEFT JOINs to check for passwords in all detail tables
         const user = await knexInstance('people as p')
             .leftJoin('admindetails as ad', 'ad.personid', 'p.personid')
             .leftJoin('volunteerdetails as vd', 'vd.personid', 'p.personid')
             .leftJoin('participantdetails as pd', 'pd.personid', 'p.personid')
-            .where('p.email', email)
+            .where('p.email', normalizedEmail)
             .select(
                 'p.personid',
                 'p.email',
@@ -423,6 +459,7 @@ router.post('/login-email', async (req, res) => {
             .first();
 
         if (!user) {
+            console.log('[LOGIN-EMAIL] Email not found:', normalizedEmail);
             return res.render("auth/login", { 
                 error_message: "Email not found.",
                 user: null,
@@ -430,15 +467,19 @@ router.post('/login-email', async (req, res) => {
             });
         }
 
+        console.log('[LOGIN-EMAIL] User found, personid:', user.personid);
+
         // If user has NO password in any detail table, redirect to create password
         if (!user.adminpassword && !user.volunteerpassword && !user.participantpassword) {
+            console.log('[LOGIN-EMAIL] No password found, redirecting to create-password');
             return res.redirect(`/create-password/${user.personid}`);
         }
 
         // User HAS a password → redirect to password entry
+        console.log('[LOGIN-EMAIL] Password found, redirecting to login-password');
         return res.redirect(`/login-password/${user.personid}`);
     } catch (err) {
-        console.error("Login email error:", err);
+        console.error("[LOGIN-EMAIL] Login email error:", err);
         return res.render("auth/login", { 
             error_message: "System error during login",
             user: null,
@@ -1476,42 +1517,75 @@ router.post('/participants/new', requireAuth, async (req, res) => {
     }
     
     try {
-        // Step 1: Insert into People table
-        const [newPerson] = await knexInstance('People')
-            .insert({
-                FirstName: first_name,
-                LastName: last_name,
-                Email: email,
-                PhoneNumber: phone || null
-            })
-            .returning('PersonID');
+        // Check email uniqueness
+        const existingUser = await knexInstance('people')
+            .where('email', email.toLowerCase().trim())
+            .first();
         
-        const personId = newPerson.PersonID || newPerson.personid;
+        if (existingUser) {
+            req.session.messages = [{ type: 'error', text: 'An account with this email already exists.' }];
+            return res.redirect('/participants/new');
+        }
         
-        // Step 2: Insert into PeopleRoles with Participant role (roleid 1)
-        await knexInstance('PeopleRoles')
+        console.log('[PARTICIPANTS/NEW] Creating participant:', email);
+        
+        // Step 1: Insert into People table (using lowercase table name)
+        const [newPerson] = await knexInstance('people')
             .insert({
-                PersonID: personId,
-                RoleID: 1 // Participant
+                firstname: first_name.trim(),
+                lastname: last_name.trim(),
+                email: email.toLowerCase().trim(),
+                phonenumber: phone ? phone.trim() : null
             })
-            .onConflict(['PersonID', 'RoleID'])
+            .returning(['personid', 'email']);
+        
+        if (!newPerson || !newPerson.personid) {
+            throw new Error('Failed to create person record - no personid returned');
+        }
+        
+        const personId = newPerson.personid;
+        console.log('[PARTICIPANTS/NEW] Created person with personid:', personId);
+        
+        // Step 2: Insert into PeopleRoles with Participant role (roleid 1) - using lowercase
+        await knexInstance('peopleroles')
+            .insert({
+                personid: personId,
+                roleid: 1 // Participant
+            })
+            .onConflict(['personid', 'roleid'])
             .ignore();
         
-        // Step 4: Insert into ParticipantDetails
-        await knexInstance('ParticipantDetails')
+        console.log('[PARTICIPANTS/NEW] Added Participant role for personid:', personId);
+        
+        // Step 3: Insert into ParticipantDetails (using lowercase)
+        await knexInstance('participantdetails')
             .insert({
-                PersonID: personId,
-                ParticipantSchoolOrEmployer: program || null,
-                ParticipantFieldOfInterest: null,
-                Password: null,
-                NewsLetter: 0
+                personid: personId,
+                participantschooloremployer: program ? program.trim() : null,
+                participantfieldofinterest: null,
+                password: null,
+                newsletter: false
             });
+        
+        console.log('[PARTICIPANTS/NEW] Created participant details for personid:', personId);
         
         req.session.messages = [{ type: 'success', text: 'Participant created successfully' }];
         res.redirect('/participants');
     } catch (error) {
-        console.error('Error creating participant:', error);
-        req.session.messages = [{ type: 'error', text: 'Error creating participant: ' + error.message }];
+        console.error('[PARTICIPANTS/NEW] Error creating participant:', error);
+        console.error('[PARTICIPANTS/NEW] Error details:', {
+            message: error.message,
+            code: error.code,
+            detail: error.detail,
+            constraint: error.constraint
+        });
+        
+        let errorMessage = 'Error creating participant: ' + error.message;
+        if (error.code === '23505') { // Unique violation
+            errorMessage = 'An account with this email already exists.';
+        }
+        
+        req.session.messages = [{ type: 'error', text: errorMessage }];
         res.redirect('/participants/new');
     }
 });
@@ -2406,90 +2480,50 @@ router.get('/my-surveys', requireAuth, async (req, res) => {
         const userId = req.session.user.id;
         
         try {
-            // Get events user attended that have survey templates
-            const registrations = await knexInstance('EventRegistrations')
-                .join('EventOccurrences', 'EventRegistrations.EventOccurrenceID', 'EventOccurrences.EventOccurrenceID')
-                .join('EventTemplate', 'EventOccurrences.EventTemplateID', 'EventTemplate.EventTemplateID')
-                .where({ 'EventRegistrations.PersonID': userId })
-                .where('EventRegistrations.RegistrationAttendedFlag', 1)
+            // Get completed surveys for this user with proper joins
+            const completedSurveys = await knexInstance("surveys")
+                .leftJoin("eventregistrations", "surveys.registrationid", "eventregistrations.registrationid")
+                .leftJoin("people", "eventregistrations.personid", "people.personid")
+                .leftJoin("eventoccurrences", "eventregistrations.eventoccurrenceid", "eventoccurrences.eventoccurrenceid")
+                .where("eventregistrations.personid", userId)
                 .select(
-                    'EventOccurrences.EventOccurrenceID',
-                    'EventOccurrences.EventName',
-                    'EventOccurrences.EventDateTimeStart',
-                    'EventOccurrences.EventLocation',
-                    'EventTemplate.EventDescription',
-                    'EventRegistrations.RegistrationID'
+                    "surveys.surveyid",
+                    "surveys.registrationid",
+                    "surveys.surveysubmissiondate",
+                    "surveys.surveysatisfactionscore",
+                    "surveys.surveyusefulnessscore",
+                    "surveys.surveyinstructorscore",
+                    "surveys.surveyrecommendationscore",
+                    "surveys.surveyoverallscore",
+                    "surveys.surveycomments",
+                    "surveys.surveynpsbucket",
+                    "eventoccurrences.eventname",
+                    knexInstance.raw("TO_CHAR(eventoccurrences.eventdatetimestart, 'YYYY-MM-DD') as eventdate")
                 )
-                .orderBy('EventOccurrences.EventDateTimeStart', 'desc');
+                .orderBy("surveys.surveyid", "desc");
             
-            // Check which events have surveys already filled out
-            const completedSurveys = await knexInstance('Surveys')
-                .join('EventRegistrations', 'Surveys.RegistrationID', 'EventRegistrations.RegistrationID')
-                .where({ 'EventRegistrations.PersonID': userId })
-                .select('EventRegistrations.RegistrationID', 'Surveys.*');
-            
-            const completedRegistrationIds = new Set(
-                completedSurveys.map(s => s.RegistrationID || s.registrationid)
-            );
-            
-            // Load survey questions from surveys table for each event occurrence
-            const eventOccurrenceIds = registrations.map(r => r.EventOccurrenceID || r.eventoccurrenceid);
-            const allSurveyQuestions = await knexInstance('surveys')
-                .whereIn('eventid', eventOccurrenceIds)
-                .select('eventid', 'question')
-                .orderBy('surveyid');
-            
-            // Group questions by eventid
-            const questionsByEventId = {};
-            allSurveyQuestions.forEach(q => {
-                const eventId = q.eventid;
-                if (!questionsByEventId[eventId]) {
-                    questionsByEventId[eventId] = [];
-                }
-                questionsByEventId[eventId].push(q.question);
-            });
-            
-            // Map registrations to events with surveys
-            const eventsWithSurveys = registrations.map(reg => {
-                const eventOccurrenceId = reg.EventOccurrenceID || reg.eventoccurrenceid;
-                const questions = questionsByEventId[eventOccurrenceId] || [];
-                const hasCompleted = completedRegistrationIds.has(reg.RegistrationID || reg.registrationid);
-                
-                return {
-                    EventOccurrenceID: eventOccurrenceId,
-                    EventName: reg.EventName || reg.eventname,
-                    EventDateTimeStart: reg.EventDateTimeStart || reg.eventdatetimestart,
-                    EventLocation: reg.EventLocation || reg.eventlocation,
-                    RegistrationID: reg.RegistrationID || reg.registrationid,
-                    questions: questions,
-                    hasSurveyTemplate: questions.length > 0,
-                    hasCompleted: hasCompleted,
-                    completedSurvey: hasCompleted ? completedSurveys.find(s => (s.RegistrationID || s.registrationid) === (reg.RegistrationID || reg.registrationid)) : null
-                };
-            }).filter(e => e.hasSurveyTemplate); // Only show events with survey templates
-            
-            res.render('user/surveys', {
+            res.render('user/surveys-list', {
                 title: 'My Surveys - Ella Rises',
                 user: req.session.user,
-                eventsWithSurveys: eventsWithSurveys || [],
+                completedSurveys: completedSurveys || [],
                 messages: req.session.messages || []
             });
         } catch (dbError) {
             console.log('Database error:', dbError.message);
-            res.render('user/surveys', {
+            res.render('user/surveys-list', {
                 title: 'My Surveys - Ella Rises',
                 user: req.session.user,
-                eventsWithSurveys: [],
+                completedSurveys: [],
                 messages: [{ type: 'info', text: 'Database not connected. Surveys will appear here once the database is set up.' }]
             });
         }
         req.session.messages = [];
     } catch (error) {
         console.error('Error fetching user surveys:', error);
-        res.render('user/surveys', {
+        res.render('user/surveys-list', {
             title: 'My Surveys - Ella Rises',
             user: req.session.user,
-            eventsWithSurveys: [],
+            completedSurveys: [],
             messages: [{ type: 'info', text: 'Database not connected. Surveys will appear here once the database is set up.' }]
         });
     }
