@@ -17,10 +17,10 @@
             <tr>
                 <th>Participant</th>
                 <th>Event</th>
-                <th>Date</th>
-                <th>Responses</th>
+                <th style="width: 180px;">Date</th>
+                <th>Scores</th>
                 <th>Comments</th>
-                <th>Actions</th>
+                <th style="width: 80px; text-align:center;">Delete</th>
             </tr>
         </thead>
         <tbody>
@@ -33,21 +33,21 @@
                 <tr>
                     <td><%= s.participantname %></td>
                     <td><%= s.eventname %></td>
-                    <td><%= s.eventdate %></td>
+                    <td style="width:180px; white-space:nowrap;"><%= s.eventdate %></td>
                     <td>
-                        Sat: <%= s.surveysatisfactionscore || '—' %> |
-                        Use: <%= s.surveyusefulnessscore || '—' %> |
-                        Inst: <%= s.surveyinstructorscore || '—' %> |
-                        Rec: <%= s.surveyrecommendationscore || '—' %> |
-                        Ovrl: <%= s.surveyoverallscore || '—' %>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem;">
+                            <span><strong>Sat:</strong> <%= s.surveysatisfactionscore || '—' %></span>
+                            <span><strong>Use:</strong> <%= s.surveyusefulnessscore || '—' %></span>
+                            <span><strong>Inst:</strong> <%= s.surveyinstructorscore || '—' %></span>
+                            <span><strong>Rec:</strong> <%= s.surveyrecommendationscore || '—' %></span>
+                            <span><strong>Ovrl:</strong> <%= s.surveyoverallscore || '—' %></span>
+                        </div>
                     </td>
                     <td><%= s.surveycomments || "—" %></td>
-                    <td>
-                        <div class="action-buttons">
-                            <form action="/surveys/<%= s.surveyid %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this survey? This action cannot be undone.');">
-                                <button type="submit" class="btn btn-sm btn-danger" aria-label="Delete survey">Delete</button>
-                            </form>
-                        </div>
+                    <td style="width:80px; text-align:center;">
+                        <form action="/surveys/<%= s.surveyid %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this survey? This action cannot be undone.');">
+                            <button type="submit" class="btn btn-sm btn-danger" aria-label="Delete survey">Delete</button>
+                        </form>
                     </td>
                 </tr>
                 <% }) %>
