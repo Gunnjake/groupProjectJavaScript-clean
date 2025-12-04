@@ -916,31 +916,31 @@ router.get('/participants', requireAuth, async (req, res) => {
     
     try {
         // Get participants with latest milestone in ONE optimized query
-        const participants = await knexInstance('People as p')
-            .join('PeopleRoles', 'p.PersonID', 'PeopleRoles.PersonID')
-            .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
-            .join('ParticipantDetails', 'p.PersonID', 'ParticipantDetails.PersonID')
-            .where('Roles.RoleName', 'Participant')
+        const participants = await knexInstance('people as p')
+            .join('peopleroles', 'p.personid', 'peopleroles.personid')
+            .join('roles', 'peopleroles.roleid', 'roles.roleid')
+            .join('participantdetails', 'p.personid', 'participantdetails.personid')
+            .where('roles.rolename', 'Participant')
             .select(
-                'p.PersonID',
-                'p.FirstName',
-                'p.LastName',
-                'p.Email',
-                'p.PhoneNumber',
-                'p.City',
-                'p.State',
-                'ParticipantDetails.NewsLetter',
+                'p.personid',
+                'p.firstname',
+                'p.lastname',
+                'p.email',
+                'p.phonenumber',
+                'p.city',
+                'p.state',
+                'participantdetails.newsletter',
                 knexInstance.raw(`
                     (
-                        SELECT m2.MilestoneTitle
-                        FROM Milestones m2
-                        WHERE m2.PersonID = p.PersonID
-                        ORDER BY m2.MilestoneDate DESC
+                        SELECT m2.milestonetitle
+                        FROM milestones m2
+                        WHERE m2.personid = p.personid
+                        ORDER BY m2.milestonedate DESC
                         LIMIT 1
                     ) AS latest_milestone
                 `)
             )
-            .orderBy('p.LastName', 'asc');
+            .orderBy('p.lastname', 'asc');
         
         res.render(viewPath, {
             title: 'Participants - Ella Rises',
@@ -2159,26 +2159,29 @@ router.get('/milestones', requireAuth, async (req, res) => {
         let milestones;
         
         if (isManager) {
-            // Managers see aggregated milestones by type (only for participants)
-            milestones = await knexInstance('Milestones')
-                .join('People', 'Milestones.PersonID', 'People.PersonID')
-                .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
-                .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
-                .where('Roles.RoleName', 'Participant')
+            // Managers see individual milestones with edit capability
+            milestones = await knexInstance('milestones')
+                .join('people', 'milestones.personid', 'people.personid')
+                .join('peopleroles', 'people.personid', 'peopleroles.personid')
+                .join('roles', 'peopleroles.roleid', 'roles.roleid')
+                .where('roles.rolename', 'Participant')
                 .select(
-                    'Milestones.MilestoneTitle',
-                    knexInstance.raw('COUNT(DISTINCT Milestones.PersonID) as count_participants')
+                    'milestones.milestoneid',
+                    'milestones.milestonetitle',
+                    'milestones.milestonedate',
+                    'people.firstname',
+                    'people.lastname',
+                    'people.email'
                 )
-                .groupBy('Milestones.MilestoneTitle')
-                .orderBy('Milestones.MilestoneTitle', 'asc');
+                .orderBy('milestones.milestonedate', 'desc');
         } else {
             // Regular users see only their own milestones
             const userId = user.id;
-            milestones = await knexInstance('Milestones')
-                .join('People', 'Milestones.PersonID', 'People.PersonID')
-                .where('Milestones.PersonID', userId)
-                .select('Milestones.*', 'People.FirstName', 'People.LastName')
-                .orderBy('Milestones.MilestoneDate', 'desc');
+            milestones = await knexInstance('milestones')
+                .join('people', 'milestones.personid', 'people.personid')
+                .where('milestones.personid', userId)
+                .select('milestones.*', 'people.firstname', 'people.lastname')
+                .orderBy('milestones.milestonedate', 'desc');
         }
         
         res.render(viewPath, {
@@ -2266,33 +2269,33 @@ router.post('/milestones/new', requireAuth, async (req, res) => {
     }
     
     try {
-        // Insert into Milestones table
+        // Insert into milestones table
         const milestoneDate = new Date(achievement_date);
         
         try {
-            await knexInstance('Milestones')
+            await knexInstance('milestones')
                 .insert({
-                    PersonID: personId,
-                    MilestoneTitle: milestone_name,
-                    MilestoneDate: milestoneDate
+                    personid: personId,
+                    milestonetitle: milestone_name,
+                    milestonedate: milestoneDate
                 });
         } catch (insertError) {
             // If insert fails due to sequence issue, reset sequence and retry
             if (insertError.code === '23505' || insertError.message.includes('duplicate key')) {
                 // Get max ID and reset sequence
-                const maxIdResult = await knexInstance('Milestones')
-                    .max('MilestoneID as max_id')
+                const maxIdResult = await knexInstance('milestones')
+                    .max('milestoneid as max_id')
                     .first();
                 
                 const maxId = maxIdResult?.max_id || 0;
                 await knexInstance.raw(`SELECT setval('milestones_milestoneid_seq', ${maxId}, true)`);
                 
                 // Try insert again
-                await knexInstance('Milestones')
+                await knexInstance('milestones')
                     .insert({
-                        PersonID: personId,
-                        MilestoneTitle: milestone_name,
-                        MilestoneDate: milestoneDate
+                        personid: personId,
+                        milestonetitle: milestone_name,
+                        milestonedate: milestoneDate
                     });
             } else {
                 throw insertError; // Re-throw if it's a different error
@@ -2308,13 +2311,204 @@ router.post('/milestones/new', requireAuth, async (req, res) => {
     }
 });
 
+// GET Route: Load Unique Milestone Titles + Participants
+router.get('/milestones/add', requireAuth, requireManager, async (req, res) => {
+    try {
+        // load unique milestone titles
+        const milestoneOptions = await knexInstance("milestones")
+            .distinct("milestonetitle")
+            .orderBy("milestonetitle");
+
+        // load participants
+        const participants = await knexInstance("people")
+            .select("personid", "firstname", "lastname", "email")
+            .orderBy("lastname");
+
+        res.render("manager/milestones-add", {
+            title: "Add Milestone",
+            user: req.session.user,
+            milestoneOptions,
+            participants
+        });
+
+    } catch (err) {
+        console.error("Error loading add milestone:", err);
+        res.redirect("/milestones");
+    }
+});
+
+// POST Route: Insert Milestone
+router.post('/milestones/add', requireAuth, requireManager, async (req, res) => {
+    const { personid, milestonetitle, milestonedate } = req.body;
+
+    try {
+        await knexInstance("milestones").insert({
+            personid,
+            milestonetitle,
+            milestonedate
+        });
+
+        res.redirect("/milestones");
+
+    } catch (err) {
+        console.error("Error adding milestone:", err);
+        res.redirect("/milestones");
+    }
+});
+
+// GET Route: Manage Milestones for a Person
+router.get('/milestones/manage/:personid', requireAuth, requireManager, async (req, res) => {
+    const { personid } = req.params;
+
+    try {
+        const person = await knexInstance("people")
+            .select("personid", "firstname", "lastname", "email")
+            .where("personid", personid)
+            .first();
+
+        if (!person) {
+            req.session.messages = [{ type: 'error', text: 'Person not found.' }];
+            return res.redirect("/milestones");
+        }
+
+        const milestones = await knexInstance("milestones")
+            .select("milestoneid", "milestonetitle", "milestonedate")
+            .where("personid", personid)
+            .orderBy("milestonedate", "desc");
+
+        res.render("manager/milestones-manage", {
+            title: "Manage Milestones",
+            user: req.session.user,
+            person,
+            milestones
+        });
+
+    } catch (err) {
+        console.error("Error loading milestone manager:", err);
+        req.session.messages = [{ type: 'error', text: 'Error loading milestones: ' + err.message }];
+        res.redirect("/milestones");
+    }
+});
+
+// GET Route: Edit Milestone
+router.get('/milestones/edit/:milestoneid', requireAuth, requireManager, async (req, res) => {
+    const { milestoneid } = req.params;
+
+    try {
+        const milestone = await knexInstance("milestones")
+            .select("milestoneid", "personid", "milestonetitle", "milestonedate")
+            .where("milestoneid", milestoneid)
+            .first();
+
+        if (!milestone) {
+            req.session.messages = [{ type: 'error', text: 'Milestone not found.' }];
+            return res.redirect("/milestones");
+        }
+
+        const person = await knexInstance("people")
+            .select("personid", "firstname", "lastname", "email")
+            .where("personid", milestone.personid)
+            .first();
+
+        if (!person) {
+            req.session.messages = [{ type: 'error', text: 'Person not found.' }];
+            return res.redirect("/milestones");
+        }
+
+        // Get distinct milestone titles for dropdown
+        const milestoneOptions = await knexInstance("milestones")
+            .distinct("milestonetitle")
+            .orderBy("milestonetitle");
+
+        res.render("manager/milestones-edit", {
+            title: "Edit Milestone",
+            user: req.session.user,
+            milestone,
+            person,
+            milestoneOptions
+        });
+
+    } catch (err) {
+        console.error("Error loading milestone edit:", err);
+        req.session.messages = [{ type: 'error', text: 'Error loading milestone: ' + err.message }];
+        res.redirect("/milestones");
+    }
+});
+
+// POST Route: Update Milestone
+router.post('/milestones/edit/:milestoneid', requireAuth, requireManager, async (req, res) => {
+    const { milestoneid } = req.params;
+    const { milestonetitle, milestonedate } = req.body;
+
+    try {
+        // Get personid before update for redirect
+        const milestone = await knexInstance("milestones")
+            .select("personid")
+            .where("milestoneid", milestoneid)
+            .first();
+
+        if (!milestone) {
+            req.session.messages = [{ type: 'error', text: 'Milestone not found.' }];
+            return res.redirect("/milestones");
+        }
+
+        // Parse the date string (YYYY-MM-DD format from date input) properly
+        let parsedDate = null;
+        if (milestonedate) {
+            // Date input sends YYYY-MM-DD format, create date at midnight UTC to avoid timezone issues
+            parsedDate = new Date(milestonedate + 'T00:00:00');
+        }
+
+        await knexInstance("milestones")
+            .where("milestoneid", milestoneid)
+            .update({
+                milestonetitle,
+                milestonedate: parsedDate
+            });
+
+        req.session.messages = [{ type: 'success', text: 'Milestone updated successfully' }];
+        res.redirect("/milestones");
+
+    } catch (err) {
+        console.error("Error updating milestone:", err);
+        req.session.messages = [{ type: 'error', text: 'Error updating milestone: ' + err.message }];
+        res.redirect(`/milestones/edit/${milestoneid}`);
+    }
+});
+
+// POST Route: Delete Milestone
+router.post('/milestones/delete/:milestoneid', requireAuth, requireManager, async (req, res) => {
+    const { milestoneid } = req.params;
+
+    try {
+        // find the person so we can redirect back correctly
+        const record = await knexInstance("milestones")
+            .select("personid")
+            .where("milestoneid", milestoneid)
+            .first();
+
+        if (!record) return res.redirect("/milestones");
+
+        await knexInstance("milestones")
+            .where("milestoneid", milestoneid)
+            .del();
+
+        req.session.messages = [{ type: 'success', text: 'Milestone deleted successfully' }];
+        res.redirect("/milestones");
+
+    } catch (err) {
+        console.error("Error deleting milestone:", err);
+        res.redirect("/milestones");
+    }
+});
+
 router.get('/milestones/:id/edit', requireAuth, async (req, res) => {
     if (req.session.user.role !== 'manager') {
         return res.status(403).send('Access denied.');
     }
     const { id } = req.params;
     try {
-        const milestoneData = await knexInstance('Milestones').where({ MilestoneID: id }).first();
+        const milestoneData = await knexInstance('milestones').where({ milestoneid: id }).first();
         
         if (!milestoneData) {
             req.session.messages = [{ type: 'error', text: 'Milestone not found.' }];
@@ -2322,12 +2516,12 @@ router.get('/milestones/:id/edit', requireAuth, async (req, res) => {
         }
         
         // Fetch participants from database (matching FInalTableCreation.sql schema)
-        const participants = await knexInstance('People')
-            .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
-            .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
-            .where('Roles.RoleName', 'Participant')
-            .select('People.PersonID', 'People.FirstName', 'People.LastName', 'People.Email')
-            .orderBy('People.LastName', 'asc');
+        const participants = await knexInstance('people')
+            .join('peopleroles', 'people.personid', 'peopleroles.personid')
+            .join('roles', 'peopleroles.roleid', 'roles.roleid')
+            .where('roles.rolename', 'Participant')
+            .select('people.personid', 'people.firstname', 'people.lastname', 'people.email')
+            .orderBy('people.lastname', 'asc');
         
         res.render('manager/milestones-form', {
             title: 'Edit Milestone - Ella Rises',

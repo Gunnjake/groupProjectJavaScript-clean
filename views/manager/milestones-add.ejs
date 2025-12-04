@@ -1,0 +1,57 @@
+<%- include('../partials/header', { title: "Add Milestone", user: user || null }) %>
+
+<div class="page-header">
+    <h1>Add Milestone</h1>
+    <p>Create a new milestone for a participant</p>
+</div>
+
+<div class="form-container">
+    <form method="POST" action="/milestones/add">
+        <!-- Participant search -->
+        <div class="form-group">
+            <label for="participantSearch">Select Participant *</label>
+            <input type="text" id="participantSearch" class="form-control" placeholder="Search name or email...">
+            
+            <select name="personid" id="participantSelect" class="form-control" style="margin-top: 0.5rem;" required>
+                <% participants.forEach(p => { %>
+                    <option value="<%= p.personid %>">
+                        <%= p.firstname %> <%= p.lastname %> - <%= p.email %>
+                    </option>
+                <% }) %>
+            </select>
+        </div>
+
+        <!-- Milestone title dropdown -->
+        <div class="form-group">
+            <label for="milestonetitle">Milestone Title *</label>
+            <select name="milestonetitle" id="milestonetitle" class="form-control" required>
+                <% milestoneOptions.forEach(m => { %>
+                    <option value="<%= m.milestonetitle %>"><%= m.milestonetitle %></option>
+                <% }) %>
+            </select>
+        </div>
+
+        <!-- Auto-set today's date -->
+        <input type="hidden" name="milestonedate" value="<%= new Date().toISOString().slice(0,10) %>">
+
+        <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Add Milestone</button>
+            <a href="/milestones" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Filter participants dropdown live
+    document.getElementById('participantSearch').addEventListener('input', function () {
+        let filter = this.value.toLowerCase();
+        let options = document.getElementById('participantSelect').options;
+
+        for (let i = 0; i < options.length; i++) {
+            let text = options[i].text.toLowerCase();
+            options[i].style.display = text.includes(filter) ? "block" : "none";
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %>
