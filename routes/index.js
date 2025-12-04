@@ -2986,12 +2986,12 @@ router.post('/milestones/new', requireAuth, async (req, res) => {
 // GET Route: Load Unique Milestone Titles + Participants
 router.get('/milestones/add', requireAuth, requireManager, async (req, res) => {
     try {
-        // load unique milestone titles
+        const selectedPersonId = req.query.personid || null;
+
         const milestoneOptions = await knexInstance("milestones")
             .distinct("milestonetitle")
             .orderBy("milestonetitle");
 
-        // load participants
         const participants = await knexInstance("people")
             .select("personid", "firstname", "lastname", "email")
             .orderBy("lastname");
@@ -3000,11 +3000,32 @@ router.get('/milestones/add', requireAuth, requireManager, async (req, res) => {
             title: "Add Milestone",
             user: req.session.user,
             milestoneOptions,
-            participants
+            participants,
+            selectedPersonId
         });
 
     } catch (err) {
         console.error("Error loading add milestone:", err);
+        res.redirect("/milestones");
+    }
+});
+
+
+// POST Route: Insert Milestone
+router.post('/milestones/add', requireAuth, requireManager, async (req, res) => {
+    const { personid, milestonetitle, milestonedate } = req.body;
+
+    try {
+        await knexInstance("milestones").insert({
+            personid,
+            milestonetitle,
+            milestonedate
+        });
+
+        res.redirect("/milestones");
+
+    } catch (err) {
+        console.error("Error adding milestone:", err);
         res.redirect("/milestones");
     }
 });
