@@ -1,10 +1,10 @@
-// Main server file - sets up Express app and middleware
+// setup express server
 
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
 
-// Load .env ONLY in development (production uses Elastic Beanstalk environment variables)
+// load env vars
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
@@ -12,13 +12,13 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Parse JSON and form data
+// parse request data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// Serve static files from public folder
+// serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session config - stores user login state
+// session config
 app.use(session({
   secret: process.env.SESSION_SECRET || 'ella-rises-secret-key-change-in-production',
   resave: false,
@@ -30,19 +30,19 @@ app.use(session({
   }
 }));
 
-// Use EJS for templates
+// use ejs templates
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Middleware to clear flash messages after they've been displayed
+// clear flash messages
 const clearMessagesAfterRender = require('./middleware/clearMessages');
 app.use(clearMessagesAfterRender);
 
-// Load all routes
+// load routes
 const routes = require('./routes');
 app.use('/', routes);
 
-// Catch errors and show error page
+// catch errors
 app.use((err, req, res, next) => {
     console.error('Error:', err);
     const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -54,7 +54,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Test database connection asynchronously (non-blocking)
+// test database connection
 async function testDatabaseConnection() {
     try {
         const requiredVars = ['RDS_HOSTNAME', 'RDS_DB_NAME', 'RDS_USERNAME', 'RDS_PASSWORD'];
@@ -77,7 +77,7 @@ async function testDatabaseConnection() {
         await Promise.race([connectionPromise, timeoutPromise]);
         console.log('✓ Database connected successfully');
         
-        // Fix sequences after connection
+        // fix sequences
         const { fixAllSequences } = require('./utils/fixSequences');
         await fixAllSequences(knexInstance);
     } catch (error) {
@@ -86,11 +86,11 @@ async function testDatabaseConnection() {
     }
 }
 
-// Start server immediately (non-blocking)
+// start server
 app.listen(PORT, () => {
     console.log(`✓ Ella Rises server running on port ${PORT}`);
     console.log(`✓ View the application at: http://localhost:${PORT}`);
-    // Test database connection in background (non-blocking)
+    // test database
     testDatabaseConnection();
 });
 

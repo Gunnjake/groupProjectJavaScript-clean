@@ -1,5 +1,4 @@
-// All routes - public, auth, CRUD operations
-// requireAuth = must be logged in, requireManager = manager role only
+// all application routes
 
 const express = require('express');
 const router = express.Router();
@@ -10,13 +9,13 @@ const knexConfig = require('../knexfile');
 const environment = process.env.NODE_ENV || 'development';
 const knexInstance = knex(knexConfig[environment]);
 
-// Date formatting helper function
+// format date helper
 function formatDate(date) {
     if (!date) return null;
     return new Date(date).toISOString().slice(0, 10);
 }
 
-// API route to clear messages after they've been displayed
+// clear messages api
 router.post('/api/clear-messages', (req, res) => {
     if (req.session && req.session.messages) {
         req.session.messages = [];
@@ -25,11 +24,9 @@ router.post('/api/clear-messages', (req, res) => {
 });
 
 
-// ============================================================================
-// PUBLIC ROUTES
-// ============================================================================
+// public routes
 
-// Health check endpoint - for deployment verification
+// health check
 router.get('/health', (req, res) => {
     res.status(200).json({
         status: 'ok',
@@ -39,7 +36,7 @@ router.get('/health', (req, res) => {
     });
 });
 
-// Homepage - shows upcoming events
+// homepage
 router.get('/', async (req, res) => {
     try {
         // Get upcoming event occurrences (matching FInalTableCreation.sql schema)
@@ -83,9 +80,9 @@ router.get('/about', (req, res) => {
     });
 });
 
-// Contact page removed
+// contact removed
 
-// Programs carousel - program index from query param
+// programs page
 router.get('/programs', (req, res) => {
     const programIndex = parseInt(req.query.program) || 0;
     res.render('public/programs', {
@@ -104,7 +101,7 @@ router.get('/register', (req, res) => {
     });
 });
 
-// Registration - creates account + participant + registration
+// register participant
 router.post('/register', async (req, res) => {
     const { firstName, lastName, email, phone, program, city, state, zip, country, school_employer, field_of_interest, birthYear, birthMonth, birthDay, password, confirmPassword } = req.body;
     
@@ -112,7 +109,7 @@ router.post('/register', async (req, res) => {
         // If already logged in, just register for program
         if (req.session.user) {
             const userId = req.session.user.id;
-            // TODO: Save registration to DB
+            // save registration
             
             req.session.messages = [{ 
                 type: 'success', 
@@ -318,11 +315,11 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// API - get logged-in user's program registrations
+// get registrations api
 router.get('/api/my-registrations', requireAuth, async (req, res) => {
     try {
         const userId = req.session.user.id;
-        // TODO: Query DB when connected
+        // query registrations
         res.json({ registrations: [] });
     } catch (error) {
         console.error('Error fetching registrations:', error);
@@ -330,7 +327,7 @@ router.get('/api/my-registrations', requireAuth, async (req, res) => {
     }
 });
 
-// 418 Teapot page
+// teapot page
 router.get('/teapot', (req, res) => {
     res.status(418).render('public/teapot', {
         title: 'I\'m a Teapot',
@@ -339,11 +336,9 @@ router.get('/teapot', (req, res) => {
 });
 
 
-// ============================================================================
-// AUTHENTICATION ROUTES
-// ============================================================================
+// auth routes
 
-// Login page
+// login page
 router.get('/login', (req, res) => {
     if (req.session && req.session.user) {
         // Redirect managers to dashboard, participants to events
@@ -362,106 +357,8 @@ router.get('/login', (req, res) => {
     });
 });
 
-// Test login page
-router.get('/test-login', (req, res) => {
-    res.send(`
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-        <div class="container mt-5" style="max-width: 500px;">
-            <h3 class="mb-4 text-center">Test Login</h3>
-            <form method="POST" action="/login">
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input class="form-control" type="text" name="username" required />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <input class="form-control" type="password" name="password" required />
-                </div>
-                <button class="btn btn-primary w-100" type="submit">Log In</button>
-            </form>
-        </div>
-    `);
-});
-
-// ===============================
-// TEST LOGIN QUERY PAGE (GET)
-// ===============================
-router.get('/test-login-query', async (req, res) => {
-    res.render('test/query-test', {
-        title: "Query Testing - Ella Rises",
-        emailInput: "",
-        error: null,
-        actualQuery: null,
-        results: null
-    });
-});
-
-// ===============================
-// TEST LOGIN QUERY (POST)
-// ===============================
-router.post('/test-login-query', async (req, res) => {
-    const email = req.body.email || '';
-
-    const sql = `
-        SELECT
-            p.personid,
-            p.email,
-            p.firstname,
-            p.lastname,
-
-            CASE
-                WHEN ad.password IS NOT NULL THEN 'Admin'
-                WHEN vd.password IS NOT NULL THEN 'Volunteer'
-                WHEN pd.password IS NOT NULL THEN 'Participant'
-                ELSE 'Unknown'
-            END AS detectedRole,
-
-            COALESCE(ad.password, vd.password, pd.password) AS detectedPassword,
-
-            ad.adminrole,
-            ad.salary,
-            vd.volunteerrole,
-            pd.participantschooloremployer,
-            pd.participantfieldofinterest,
-
-        FROM people p
-        LEFT JOIN admindetails ad ON p.personid = ad.personid
-        LEFT JOIN volunteerdetails vd ON p.personid = vd.personid
-        LEFT JOIN participantdetails pd ON p.personid = pd.personid
-        WHERE p.email = ?
-        LIMIT 1
-    `;
-
-    try {
-        const result = await knexInstance.raw(sql, [email]);
-        const rows = result.rows || [];
-
-        res.render('test/query-test', {
-            title: "Query Testing - Ella Rises",
-            emailInput: email,
-            error: null,
-            actualQuery: sql.replace("?", `'${email.replace(/'/g, "''")}'`),
-            results: {
-                emailSearched: email,
-                rowCount: rows.length,
-                rows
-            }
-        });
-
-    } catch (err) {
-        res.render('test/query-test', {
-            title: "Query Testing - Ella Rises",
-            emailInput: email,
-            error: err.message,
-            actualQuery: sql.replace("?", `'${email.replace(/'/g, "''")}'`),
-            results: null
-        });
-    }
-});
-
-// Login form submission - using COALESCE with LEFT JOINs
-// POST /login-email - Email-first login step
+// email login step
 router.post('/login-email', async (req, res) => {
     const email = req.body.email;
 

@@ -1,111 +1,84 @@
-# INTEX-ELLA-RISES
-Intex Project for section 4 group 4
+# Ella Rises Website
 
 ## Project Overview
 
-Ella Rises web application for managing participants, events, surveys, milestones, and donations. The application includes role-based access control (Manager and Common User) and a public-facing landing page for donors.
+Ella Rises is a web application for managing STEAM programs, cultural heritage programs, and participant data. The system supports role-based access control with three user types: Administrators (managers), Volunteers, and Participants. Administrators can manage events, participants, surveys, milestones, and donations. Participants can register for events, complete surveys, and view their personal information.
 
-## Project Structure
+## Website URL
 
-```
-INTEX-ELLA-RISES/
-├── server.js                 # Main Express server file
-├── package.json              # Dependencies and scripts
-├── .env.example              # Environment variables template
-├── middleware/
-│   └── auth.js              # Authentication and authorization middleware
-├── routes/
-│   ├── public.js            # Public routes (landing, about, contact, donate)
-│   ├── auth.js              # Authentication routes (login, logout)
-│   ├── dashboard.js         # Dashboard routes
-│   ├── users.js             # User maintenance routes (manager only)
-│   ├── participants.js      # Participant routes
-│   ├── events.js            # Event routes
-│   ├── surveys.js           # Survey routes
-│   ├── milestones.js        # Milestone routes
-│   └── donations.js         # Donation routes
-├── views/
-│   ├── partials/
-│   │   ├── header.ejs       # Header partial with navigation
-│   │   └── footer.ejs       # Footer partial
-│   ├── public/              # Public pages (no authentication)
-│   │   ├── landing.ejs
-│   │   ├── about.ejs
-│   │   ├── contact.ejs
-│   │   ├── donate.ejs
-│   │   └── teapot.ejs       # 418 status code page
-│   ├── auth/
-│   │   └── login.ejs
-│   ├── manager/             # Manager pages (full CRUD)
-│   │   ├── users.ejs
-│   │   ├── users-form.ejs
-│   │   ├── participants.ejs
-│   │   ├── participants-form.ejs
-│   │   ├── events.ejs
-│   │   ├── events-form.ejs
-│   │   ├── surveys.ejs
-│   │   ├── surveys-form.ejs
-│   │   ├── milestones.ejs
-│   │   ├── milestones-form.ejs
-│   │   ├── donations.ejs
-│   │   └── donations-form.ejs
-│   ├── user/                # Common user pages (view only)
-│   │   ├── participants.ejs
-│   │   ├── events.ejs
-│   │   ├── surveys.ejs
-│   │   ├── milestones.ejs
-│   │   └── donations.ejs
-│   ├── dashboard/
-│   │   └── index.ejs        # Dashboard placeholder (Tableau will be embedded)
-│   └── error.ejs            # Error page
-├── public/
-│   ├── css/
-│   │   └── style.css        # Main stylesheet with Ella Rises color scheme
-│   ├── js/
-│   │   └── main.js          # Client-side JavaScript
-│   └── images/               # Images (logo, etc.)
-└── db/
-    └── index.js             # Database connection (placeholder)
+**Production Site:** https://ellarising4-4.is404.net/
 
-```
+## TA Grading Instructions
 
-## Features
+### Admin Login
 
-### Public Pages
-- **Landing Page**: Welcome page explaining Ella Rises mission and programs
-- **About**: Information about the organization
-- **Contact**: Contact form
-- **Donate**: Public donation form for visitors
-- **418 Teapot**: HTTP 418 status code page (IS 404 requirement)
+**Email:** admin@ella.com  
+**Password:** admin
 
-### Authentication
-- Login system with role-based access (Manager or Common User)
-- Session management
-- Protected routes with authentication middleware
+**Admin Features:**
+- Full dashboard with analytics (Tableau embedded)
+- Manage events (create, edit, delete future events)
+- Manage participants (CRUD operations)
+- View and delete completed surveys
+- Manage milestones (create, edit, delete)
+- Manage donations (CRUD operations)
+- User maintenance (add/remove admin and volunteer roles)
+- All data tables with search functionality
 
-### Manager Features (Full CRUD)
-- **User Maintenance**: Create, read, update, delete user accounts
-- **Participants**: Manage participant information
-- **Events**: Manage events and workshops
-- **Surveys**: Manage post-event survey responses
-- **Milestones**: Create and assign milestones to participants (1 to many relationship)
-- **Donations**: Manage donation records
-- **Dashboard**: View analytics and KPIs (Tableau will be embedded)
+### User Login (Participant)
 
-### Common User Features (View Only)
-- View participants, events, surveys, milestones, and donations
-- Search functionality on all list pages
-- No edit/delete capabilities
+**Email:** user@ella.com  
+**Password:** user
 
-### Search Functionality
-- All list pages include search functionality
-- Client-side filtering for instant results
+**Participant Features:**
+- View available events
+- One-click event registration
+- Complete post-event surveys
+- View personal milestones
+- View completed surveys
+- No dashboard (redirects to events page)
+- Cannot access admin features
 
-## Installation
+### Volunteer Login
+
+**Email:** volunteer@ella.com  
+**Password:** volunteer
+
+**Volunteer Features:**
+- Same view as participants
+- Can view events and register
+- Cannot access admin features
+
+### TA Features Checklist
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Login works for admin | ✓ | Email-first flow, password check |
+| Login works for user | ✓ | Email-first flow, password creation |
+| Login works for volunteer | ✓ | Same as participant |
+| Role restrictions work | ✓ | Admin sees dashboard, participants redirected |
+| Event registration works | ✓ | One-click registration, capacity check |
+| Surveys can be filled | ✓ | Post-event survey submission |
+| Surveys can be viewed | ✓ | Admin sees all, participants see own |
+| Milestones work | ✓ | Admin can create/edit/delete |
+| Donations work | ✓ | Admin CRUD operations |
+| Admin CRUD pages work | ✓ | All manager pages functional |
+| Required fields enforced | ✓ | Frontend and backend validation |
+| Date formats fixed | ✓ | Consistent date handling |
+
+## Local Development Setup
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- PostgreSQL database
+- npm or yarn
+
+### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Gunnjake/INTEX-ELLA-RISES.git
+git clone <repository-url>
 cd INTEX-ELLA-RISES
 ```
 
@@ -115,102 +88,131 @@ npm install
 ```
 
 3. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
+Create a `.env` file in the root directory with:
+```
+NODE_ENV=development
+PORT=8080
+SESSION_SECRET=your-secret-key-here
+
+RDS_HOSTNAME=your-database-host
+RDS_DB_NAME=your-database-name
+RDS_USERNAME=your-database-username
+RDS_PASSWORD=your-database-password
+RDS_PORT=5432
 ```
 
-4. Start the server:
+4. Connect to PostgreSQL:
+- Ensure PostgreSQL is running
+- Update `.env` with your database credentials
+- Database schema should match the ERD provided
+
+5. Run the application:
 ```bash
 npm start
-# Or for development with auto-reload:
+```
+
+For development with auto-reload:
+```bash
 npm run dev
 ```
 
-## Database Setup
+6. Access the application:
+Open http://localhost:8080 in your browser
 
-The database connection is currently a placeholder. When the database is ready:
+### Rebuilding Assets
 
-1. Update `db/index.js` with your database configuration
-2. Uncomment database queries in route files (marked with `// TODO:`)
-3. Create Knex migration files if using Knex
-4. Run migrations to set up database schema
+No build step required. Static assets in `/public` are served directly.
 
-## Routes
+## Deployment Notes
 
-### Public Routes
-- `GET /` - Landing page
-- `GET /about` - About page
-- `GET /contact` - Contact page
-- `POST /contact` - Submit contact form
-- `GET /donate` - Donation page
-- `POST /donate` - Submit donation
-- `GET /teapot` - 418 status code page
-- `GET /login` - Login page
-- `POST /login` - Login form submission
-- `GET /logout` - Logout
+### AWS Elastic Beanstalk
 
-### Protected Routes (Require Authentication)
-- `GET /dashboard` - Dashboard
-- `GET /participants` - List participants
-- `GET /events` - List events
-- `GET /surveys` - List surveys
-- `GET /milestones` - List milestones
-- `GET /donations` - List donations
+The application is deployed to AWS Elastic Beanstalk and automatically deploys from the `main` branch.
 
-### Manager-Only Routes
-- `GET /users` - List users
-- `GET /users/new` - Add user form
-- `POST /users/new` - Create user
-- `GET /users/:id/edit` - Edit user form
-- `POST /users/:id/update` - Update user
-- `POST /users/:id/delete` - Delete user
+**Environment Variables Required:**
+- `NODE_ENV=production`
+- `PORT=8080` (set by Beanstalk)
+- `SESSION_SECRET` (set in Beanstalk configuration)
+- `RDS_HOSTNAME` (from RDS instance)
+- `RDS_DB_NAME` (database name)
+- `RDS_USERNAME` (database username)
+- `RDS_PASSWORD` (database password)
+- `RDS_PORT=5432`
 
-Similar CRUD routes exist for participants, events, surveys, milestones, and donations.
+**Database Requirements:**
+- PostgreSQL RDS instance
+- Database schema matches ERD
+- Tables: people, peopleroles, roles, admindetails, volunteerdetails, participantdetails, eventoccurrences, eventtemplate, eventregistrations, surveys, milestones, donations
 
-## Color Scheme
+**Deployment Process:**
+1. Push changes to `main` branch
+2. Beanstalk automatically deploys
+3. Server restarts with new code
+4. Database connection tested on startup
 
-The website uses a color scheme based on the Ella Rises brand:
-- Primary Orange: `#FF6B35`
-- Secondary Orange: `#FF8C42`
-- Warm Orange: `#FFA07A`
-- Dark Orange: `#D84315`
-- Dark Brown: `#5D4037`
+## Project Structure
 
-## Dependencies
+```
+INTEX-ELLA-RISES/
+├── server.js              # Main Express server
+├── routes/
+│   └── index.js           # All application routes
+├── middleware/
+│   ├── auth.js           # Authentication middleware
+│   └── clearMessages.js  # Flash message cleanup
+├── views/                # EJS templates
+│   ├── auth/             # Login pages
+│   ├── manager/          # Admin pages
+│   ├── user/             # Participant pages
+│   ├── public/           # Public pages
+│   └── partials/        # Header/footer
+├── public/               # Static assets
+│   ├── css/
+│   ├── js/
+│   └── images/
+└── utils/                # Utility functions
+```
 
-- **express**: Web framework
-- **ejs**: Template engine
-- **knex**: SQL query builder (for database)
-- **pg**: PostgreSQL client (or mysql2 for MySQL)
-- **express-session**: Session management
-- **multer**: File upload handling
-- **bcrypt**: Password hashing
-- **helmet**: Security headers
-- **csurf**: CSRF protection
-- **connect-flash**: Flash messages
-- **dotenv**: Environment variables
+## Key Features
 
-## Development Notes
+### Authentication System
+- Email-first login flow
+- Password creation for new users
+- Role-based access control
+- Session management
 
-- All database queries are currently commented out with `// TODO:` markers
-- Authentication uses placeholder logic (accepts any username/password)
-- Forms are set up but don't save to database yet
-- Dashboard is a placeholder for Tableau embedding
-- Search functionality works client-side on the frontend
+### Event Management
+- Create/edit/delete events
+- Event capacity tracking
+- One-click participant registration
+- Past/future event filtering
 
-## Next Steps
+### Survey System
+- Post-event survey creation
+- Participant survey completion
+- Admin survey viewing/deletion
+- Survey score tracking
 
-1. Connect database when SQL script is ready
-2. Implement actual authentication with database
-3. Add database queries to all routes
-4. Embed Tableau dashboard
-5. Deploy to AWS (handled by another team member)
+### Participant Management
+- Full CRUD operations
+- Milestone assignment
+- Registration tracking
+- Profile management
 
-## Team Members
+### Donation Management
+- Donation entry and editing
+- Donor management (existing or new)
+- Date tracking
+- Admin reporting
 
-Section 4, Group 4
+## Technology Stack
 
-## License
+- **Backend:** Node.js, Express.js
+- **Database:** PostgreSQL with Knex.js
+- **Templates:** EJS
+- **Authentication:** Express-session, bcryptjs
+- **Deployment:** AWS Elastic Beanstalk
 
-ISC
+## Support
+
+For issues or questions, contact the development team.
