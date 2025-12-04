@@ -16,8 +16,9 @@
         <thead>
             <tr>
                 <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Phone</th>
                 <th scope="col">Location</th>
-                <th scope="col">Most Recent Milestone</th>
                 <th scope="col">Newsletter</th>
                 <th scope="col">Actions</th>
             </tr>
@@ -26,20 +27,10 @@
             <% if (typeof participants !== 'undefined' && participants.length > 0) { %>
                 <% participants.forEach(function(participant) { %>
                     <tr>
-                        <td><%= (participant.FirstName || participant.firstname || '').trim() + ' ' + (participant.LastName || participant.lastname || '').trim() %></td>
+                        <td><%= (participant.FirstName || participant.firstname || '') + ' ' + (participant.LastName || participant.lastname || '') %></td>
+                        <td><%= participant.Email || participant.email %></td>
+                        <td><%= participant.PhoneNumber || participant.phonenumber || participant.phone || 'N/A' %></td>
                         <td><%= (participant.City || participant.city || '') + (participant.State || participant.state ? ', ' + participant.State : '') %></td>
-                        <td>
-                            <% if (participant.latestMilestone && participant.latestMilestone.title) { %>
-                                <%= participant.latestMilestone.title %>
-                                <% if (participant.latestMilestone.date) { %>
-                                    <br><small style="color: var(--text-secondary);">
-                                        <%= new Date(participant.latestMilestone.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %>
-                                    </small>
-                                <% } %>
-                            <% } else { %>
-                                <span style="color: var(--text-secondary);">None</span>
-                            <% } %>
-                        </td>
                         <td><%= participant.NewsLetter === 1 || participant.newsletter === 1 ? 'Yes' : 'No' %></td>
                         <td>
                             <a href="/participants/<%= participant.PersonID || participant.personid || participant.id %>/edit" class="btn btn-sm btn-secondary" aria-label="Edit participant">Edit</a>
@@ -51,7 +42,7 @@
                 <% }); %>
             <% } else { %>
                 <tr>
-                    <td colspan="5" class="text-center" role="status" aria-live="polite">No participants found. Add a participant to get started.</td>
+                    <td colspan="6" class="text-center" role="status" aria-live="polite">No participants found. Add a participant to get started.</td>
                 </tr>
             <% } %>
         </tbody>

@@ -919,44 +919,24 @@ router.get('/participants', requireAuth, async (req, res) => {
     const viewPath = isManager ? 'manager/participants' : 'user/participants';
     
     try {
-        // Get participants: People with Participant role + ParticipantDetails + most recent milestone
+        // Get participants: People with Participant role + ParticipantDetails
         const participants = await knexInstance('People')
             .join('PeopleRoles', 'People.PersonID', 'PeopleRoles.PersonID')
             .join('Roles', 'PeopleRoles.RoleID', 'Roles.RoleID')
             .join('ParticipantDetails', 'People.PersonID', 'ParticipantDetails.PersonID')
             .where('Roles.RoleName', 'Participant')
             .select(
-                'People.PersonID',
-                'People.FirstName',
-                'People.LastName',
-                'People.Email',
-                'People.City',
-                'People.State',
+                'People.*',
+                'ParticipantDetails.ParticipantSchoolOrEmployer',
+                'ParticipantDetails.ParticipantFieldOfInterest',
                 'ParticipantDetails.NewsLetter'
             )
-            .orderBy('People.LastName', 'asc');
-        
-        // Get most recent milestone for each participant
-        const participantsWithMilestones = await Promise.all(participants.map(async (participant) => {
-            const latestMilestone = await knexInstance('Milestones')
-                .where('Milestones.PersonID', participant.PersonID)
-                .orderBy('Milestones.MilestoneDate', 'desc')
-                .select('Milestones.MilestoneTitle', 'Milestones.MilestoneDate')
-                .first();
-            
-            return {
-                ...participant,
-                latestMilestone: latestMilestone ? {
-                    title: latestMilestone.MilestoneTitle || latestMilestone.milestonetitle,
-                    date: latestMilestone.MilestoneDate || latestMilestone.milestonedate
-                } : null
-            };
-        }));
+            .orderBy('People.PersonID', 'desc');
         
         res.render(viewPath, {
             title: 'Participants - Ella Rises',
             user: user,
-            participants: participantsWithMilestones || [],
+            participants: participants || [],
             messages: req.session.messages || []
         });
         req.session.messages = [];
