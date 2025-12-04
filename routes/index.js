@@ -1222,15 +1222,49 @@ router.post('/events/new', requireAuth, async (req, res) => {
             .first();
         
         if (!eventTemplate) {
-            const [newTemplate] = await knexInstance('EventTemplate')
-                .insert({
-                    EventName: event_name,
-                    EventType: event_type,
-                    EventDescription: description || null,
-                    EventDefaultCapacity: null
-                })
-                .returning('EventTemplateID');
-            eventTemplate = newTemplate;
+            try {
+                const [newTemplate] = await knexInstance('EventTemplate')
+                    .insert({
+                        EventName: event_name,
+                        EventType: event_type,
+                        EventDescription: description || null,
+                        EventDefaultCapacity: null
+                    })
+                    .returning('EventTemplateID');
+                eventTemplate = newTemplate;
+            } catch (insertError) {
+                // If insert fails due to sequence issue, reset sequence and retry
+                if (insertError.code === '23505' || insertError.message.includes('duplicate key')) {
+                    // Get max ID and reset sequence
+                    const maxIdResult = await knexInstance('EventTemplate')
+                        .max('EventTemplateID as max_id')
+                        .first();
+                    
+                    const maxId = maxIdResult?.max_id || 0;
+                    await knexInstance.raw(`SELECT setval('eventtemplate_eventtemplateid_seq', ${maxId}, true)`);
+                    
+                    // Try insert again
+                    const [newTemplate] = await knexInstance('EventTemplate')
+                        .insert({
+                            EventName: event_name,
+                            EventType: event_type,
+                            EventDescription: description || null,
+                            EventDefaultCapacity: null
+                        })
+                        .returning('EventTemplateID');
+                    eventTemplate = newTemplate;
+                } else {
+                    // If it's a different error, check if template was created by another process
+                    eventTemplate = await knexInstance('EventTemplate')
+                        .where('EventName', event_name)
+                        .where('EventType', event_type)
+                        .first();
+                    
+                    if (!eventTemplate) {
+                        throw insertError; // Re-throw if we can't recover
+                    }
+                }
+            }
         }
         
         const templateId = eventTemplate.EventTemplateID || eventTemplate.eventtemplateid;
@@ -1909,15 +1943,62 @@ router.post('/milestones/new', requireAuth, async (req, res) => {
         return res.redirect('/milestones/new');
     }
     
+    // Validate participant_id is a valid number
+    const personId = parseInt(participant_id);
+    if (isNaN(personId) || personId <= 0) {
+        req.session.messages = [{ type: 'error', text: 'Please select a valid participant.' }];
+        return res.redirect('/milestones/new');
+    }
+    
+    // Verify participant exists
+    try {
+        const participant = await knexInstance('People')
+            .where('PersonID', personId)
+            .first();
+        
+        if (!participant) {
+            req.session.messages = [{ type: 'error', text: 'Selected participant not found.' }];
+            return res.redirect('/milestones/new');
+        }
+    } catch (checkError) {
+        console.error('Error checking participant:', checkError);
+        req.session.messages = [{ type: 'error', text: 'Error validating participant.' }];
+        return res.redirect('/milestones/new');
+    }
+    
     try {
         // Insert into Milestones table
         const milestoneDate = new Date(achievement_date);
-        await knexInstance('Milestones')
-            .insert({
-                PersonID: participant_id,
-                MilestoneTitle: milestone_name,
-                MilestoneDate: milestoneDate
-            });
+        
+        try {
+            await knexInstance('Milestones')
+                .insert({
+                    PersonID: personId,
+                    MilestoneTitle: milestone_name,
+                    MilestoneDate: milestoneDate
+                });
+        } catch (insertError) {
+            // If insert fails due to sequence issue, reset sequence and retry
+            if (insertError.code === '23505' || insertError.message.includes('duplicate key')) {
+                // Get max ID and reset sequence
+                const maxIdResult = await knexInstance('Milestones')
+                    .max('MilestoneID as max_id')
+                    .first();
+                
+                const maxId = maxIdResult?.max_id || 0;
+                await knexInstance.raw(`SELECT setval('milestones_milestoneid_seq', ${maxId}, true)`);
+                
+                // Try insert again
+                await knexInstance('Milestones')
+                    .insert({
+                        PersonID: personId,
+                        MilestoneTitle: milestone_name,
+                        MilestoneDate: milestoneDate
+                    });
+            } else {
+                throw insertError; // Re-throw if it's a different error
+            }
+        }
         
         req.session.messages = [{ type: 'success', text: 'Milestone created successfully' }];
         res.redirect('/milestones');
