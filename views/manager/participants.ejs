@@ -41,12 +41,6 @@
                                 <!-- View all milestones -->
                                 <a href="/milestones/manage/<%= participant.personid %>" class="btn btn-sm btn-outline-primary">Milestones</a>
                             
-                                <!-- Add milestone directly tied to this participant -->
-                                <a href="/admin/milestones/add?personid=<%= participant.personid %>" 
-                                   class="btn btn-sm btn-success">
-                                   Add Milestone
-                                </a>
-                            
                                 <!-- Delete -->
                                 <form action="/participants/<%= participant.personid %>/delete" 
                                       method="POST" 
