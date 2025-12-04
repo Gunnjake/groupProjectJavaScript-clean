@@ -119,7 +119,7 @@ router.get('/register', (req, res) => {
 
 // Registration - creates account + participant + registration
 router.post('/register', async (req, res) => {
-    const { firstName, lastName, email, phone, age, program, city, state, zip, school, fieldOfInterest, birthdate, password, confirmPassword, newsletter } = req.body;
+    const { firstName, lastName, email, phone, program, city, state, zip, country, school_employer, field_of_interest, birthYear, birthMonth, birthDay, password, confirmPassword, newsletter } = req.body;
     
     try {
         // If already logged in, just register for program
@@ -134,11 +134,38 @@ router.post('/register', async (req, res) => {
             return res.redirect('/register');
         }
         
-        // Validate required fields
-        if (!firstName || !lastName || !email) {
+        // Validate ALL required fields
+        if (!firstName || !lastName || !email || !phone || !city || !state || !zip || !country || 
+            !school_employer || !field_of_interest || !birthYear || !birthMonth || !birthDay || 
+            !password || !newsletter) {
             req.session.messages = [{ 
                 type: 'error', 
-                text: 'First name, last name, and email are required.' 
+                text: 'All fields are required. Please fill in all required fields.' 
+            }];
+            return res.redirect('/register');
+        }
+        
+        // Validate password
+        if (password.length < 8) {
+            req.session.messages = [{ 
+                type: 'error', 
+                text: 'Password must be at least 8 characters long.' 
+            }];
+            return res.redirect('/register');
+        }
+        
+        if (password.length > 20) {
+            req.session.messages = [{ 
+                type: 'error', 
+                text: 'Password must be 20 characters or less.' 
+            }];
+            return res.redirect('/register');
+        }
+        
+        if (password !== confirmPassword) {
+            req.session.messages = [{ 
+                type: 'error', 
+                text: 'Passwords do not match.' 
             }];
             return res.redirect('/register');
         }
@@ -156,112 +183,130 @@ router.post('/register', async (req, res) => {
             return res.redirect('/login');
         }
         
-        // Validate password if provided (password is optional during registration)
-        if (password) {
-            if (password !== confirmPassword) {
-                req.session.messages = [{ 
-                    type: 'error', 
-                    text: 'Passwords do not match.' 
-                }];
-                return res.redirect('/register');
-            }
-            if (password.length > 20) {
-                req.session.messages = [{ 
-                    type: 'error', 
-                    text: 'Password must be 20 characters or less.' 
-                }];
-                return res.redirect('/register');
-            }
+        // Prepare state (2-character, uppercase)
+        let stateValue = state.trim().toUpperCase().substring(0, 2);
+        if (stateValue.length !== 2) {
+            req.session.messages = [{ 
+                type: 'error', 
+                text: 'Please select a valid state.' 
+            }];
+            return res.redirect('/register');
         }
         
-        // Prepare state (2-character, uppercase)
-        let stateValue = null;
-        if (state) {
-            stateValue = state.trim().toUpperCase().substring(0, 2);
-            if (stateValue.length !== 2) {
-                stateValue = null; // Invalid state, set to null
-            }
+        // Convert birthday to YYYY-MM-DD format
+        const year = parseInt(birthYear);
+        const month = parseInt(birthMonth);
+        const day = parseInt(birthDay);
+        
+        if (isNaN(year) || isNaN(month) || isNaN(day)) {
+            req.session.messages = [{ 
+                type: 'error', 
+                text: 'Please enter a valid birthday.' 
+            }];
+            return res.redirect('/register');
         }
+        
+        // Validate date
+        const date = new Date(year, month - 1, day);
+        if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+            req.session.messages = [{ 
+                type: 'error', 
+                text: 'Please enter a valid date.' 
+            }];
+            return res.redirect('/register');
+        }
+        
+        const birthdate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         
         console.log('[REGISTER] Starting registration for:', email);
         
-        // Step 1: Create person record in People table
-        const [newPerson] = await knexInstance('people')
-            .insert({
-                firstname: firstName.trim(),
-                lastname: lastName.trim(),
-                email: email.toLowerCase().trim(),
-                phonenumber: phone ? phone.trim() : null,
-                city: city ? city.trim() : null,
-                state: stateValue,
-                zip: zip ? zip.trim() : null,
-                country: 'USA'
-            })
-            .returning(['personid', 'email']);
-        
-        if (!newPerson || !newPerson.personid) {
-            throw new Error('Failed to create person record - no personid returned');
-        }
-        
-        const personId = newPerson.personid;
-        console.log('[REGISTER] Created person with personid:', personId);
-        
-        // Step 2: Insert into PeopleRoles with Participant role (roleid 1)
-        await knexInstance('peopleroles')
-            .insert({
+        // Use transaction to ensure both inserts succeed
+        await knexInstance.transaction(async (trx) => {
+            // Step 1: Create person record in People table
+            const [newPerson] = await trx('people')
+                .insert({
+                    firstname: firstName.trim(),
+                    lastname: lastName.trim(),
+                    email: email.toLowerCase().trim(),
+                    phonenumber: phone.trim(),
+                    city: city.trim(),
+                    state: stateValue,
+                    zip: zip.trim(),
+                    country: country.trim(),
+                    birthdate: birthdate,
+                    schooloremployer: school_employer.trim(),
+                    fieldofinterest: field_of_interest.trim()
+                })
+                .returning(['personid', 'email']);
+            
+            if (!newPerson || !newPerson.personid) {
+                throw new Error('Failed to create person record - no personid returned');
+            }
+            
+            const personId = newPerson.personid;
+            console.log('[REGISTER] Created person with personid:', personId);
+            
+            // Step 2: Insert into PeopleRoles with Participant role (roleid 1)
+            await trx('peopleroles')
+                .insert({
+                    personid: personId,
+                    roleid: 1 // Participant
+                })
+                .onConflict(['personid', 'roleid'])
+                .ignore();
+            
+            console.log('[REGISTER] Added Participant role for personid:', personId);
+            
+            // Step 3: Create participant details record
+            const participantDetailsData = {
                 personid: personId,
-                roleid: 1 // Participant
-            })
-            .onConflict(['personid', 'roleid'])
-            .ignore();
-        
-        console.log('[REGISTER] Added Participant role for personid:', personId);
-        
-        // Step 3: Create participant details record (password optional)
-        const participantDetailsData = {
-            personid: personId,
-            participantschooloremployer: school ? school.trim() : null,
-            participantfieldofinterest: fieldOfInterest ? fieldOfInterest.trim() : null,
-            newsletter: newsletter === 'yes' ? true : false
-        };
-        
-        // Only add password if provided during registration
-        if (password) {
-            participantDetailsData.password = password; // Store raw password (VARCHAR(20))
-        }
-        
-        // Check if participantdetails already exists
-        const existingParticipantDetails = await knexInstance('participantdetails')
-            .where('personid', personId)
-            .first();
-        
-        if (existingParticipantDetails) {
-            // Update existing record
-            await knexInstance('participantdetails')
+                participantschooloremployer: school_employer.trim(),
+                participantfieldofinterest: field_of_interest.trim(),
+                newsletter: newsletter === 'yes' ? true : false
+            };
+            
+            // Check if participantdetails already exists
+            const existingParticipantDetails = await trx('participantdetails')
                 .where('personid', personId)
-                .update(participantDetailsData);
-        } else {
-            // Insert new record
-            await knexInstance('participantdetails')
-                .insert(participantDetailsData);
-        }
+                .first();
+            
+            if (existingParticipantDetails) {
+                await trx('participantdetails')
+                    .where('personid', personId)
+                    .update(participantDetailsData);
+            } else {
+                await trx('participantdetails')
+                    .insert(participantDetailsData);
+            }
+            
+            console.log('[REGISTER] Created/updated participant details for personid:', personId);
+            
+            // Step 4: Store password in volunteerdetails (per ERD: Participants → volunteerdetails.password)
+            const existingVolunteerDetails = await trx('volunteerdetails')
+                .where('personid', personId)
+                .first();
+            
+            if (existingVolunteerDetails) {
+                await trx('volunteerdetails')
+                    .where('personid', personId)
+                    .update({ password: password });
+            } else {
+                await trx('volunteerdetails')
+                    .insert({
+                        personid: personId,
+                        password: password
+                    });
+            }
+            
+            console.log('[REGISTER] Stored password in volunteerdetails for personid:', personId);
+        });
         
-        console.log('[REGISTER] Created/updated participant details for personid:', personId);
-        
-        // Success message
-        if (password) {
-            req.session.messages = [{ 
-                type: 'success', 
-                text: `Account created successfully! You can now login with your email and password.` 
-            }];
-            res.redirect('/login');
-        } else {
-            req.session.messages = [{ 
-                type: 'success', 
-                text: `Account created successfully! Please set your password to complete registration.` 
-            }];
-            res.redirect(`/create-password/${personId}`);
-        }
+        // Success - redirect to login
+        req.session.messages = [{ 
+            type: 'success', 
+            text: `Account created successfully! You can now login with your email and password.` 
+        }];
+        res.redirect('/login');
     } catch (error) {
         console.error('[REGISTER] Registration error:', error);
         console.error('[REGISTER] Error details:', {
@@ -448,20 +493,36 @@ router.post('/login-email', async (req, res) => {
         
         console.log('[LOGIN-EMAIL] Checking email:', normalizedEmail);
         
-        // Query using LEFT JOINs to check for passwords in all detail tables
+        // Query using LEFT JOINs to check for passwords in correct tables (per ERD)
+        // Per ERD: Participants → volunteerdetails.password, Admins → adminrole.password
         const user = await knexInstance('people as p')
-            .leftJoin('admindetails as ad', 'ad.personid', 'p.personid')
             .leftJoin('volunteerdetails as vd', 'vd.personid', 'p.personid')
-            .leftJoin('participantdetails as pd', 'pd.personid', 'p.personid')
             .where('p.email', normalizedEmail)
             .select(
                 'p.personid',
                 'p.email',
-                'ad.password as adminpassword',
-                'vd.password as volunteerpassword',
-                'pd.password as participantpassword'
+                'vd.password as volunteerpassword'
             )
             .first();
+
+        // Also check adminrole (per ERD) - try adminrole first, fallback to admindetails
+        let adminPassword = null;
+        if (user) {
+            try {
+                const adminCheck = await knexInstance('adminrole')
+                    .where('personid', user.personid)
+                    .select('password')
+                    .first();
+                adminPassword = adminCheck?.password;
+            } catch (e) {
+                // Fallback to admindetails if adminrole doesn't exist
+                const adminCheck = await knexInstance('admindetails')
+                    .where('personid', user.personid)
+                    .select('password')
+                    .first();
+                adminPassword = adminCheck?.password;
+            }
+        }
 
         if (!user) {
             console.log('[LOGIN-EMAIL] Email not found:', normalizedEmail);
@@ -474,8 +535,8 @@ router.post('/login-email', async (req, res) => {
 
         console.log('[LOGIN-EMAIL] User found, personid:', user.personid);
 
-        // If user has NO password in any detail table, redirect to create password
-        if (!user.adminpassword && !user.volunteerpassword && !user.participantpassword) {
+        // If user has NO password in correct tables (per ERD), redirect to create password
+        if (!adminPassword && !user.volunteerpassword) {
             console.log('[LOGIN-EMAIL] No password found, redirecting to create-password');
             return res.redirect(`/create-password/${user.personid}`);
         }
@@ -498,22 +559,37 @@ router.get('/login-password/:personid', async (req, res) => {
     const { personid } = req.params;
 
     try {
-        // Look up user with password check from all detail tables
+        // Look up user with password check from correct tables (per ERD)
         const user = await knexInstance('people as p')
-            .leftJoin('admindetails as ad', 'ad.personid', 'p.personid')
             .leftJoin('volunteerdetails as vd', 'vd.personid', 'p.personid')
-            .leftJoin('participantdetails as pd', 'pd.personid', 'p.personid')
             .where('p.personid', personid)
             .select(
                 'p.personid',
                 'p.email',
-                'ad.password as adminpassword',
-                'vd.password as volunteerpassword',
-                'pd.password as participantpassword'
+                'vd.password as volunteerpassword'
             )
             .first();
 
-        if (!user || (!user.adminpassword && !user.volunteerpassword && !user.participantpassword)) {
+        // Also check adminrole (per ERD)
+        let adminPassword = null;
+        if (user) {
+            try {
+                const adminCheck = await knexInstance('adminrole')
+                    .where('personid', personid)
+                    .select('password')
+                    .first();
+                adminPassword = adminCheck?.password;
+            } catch (e) {
+                // Fallback to admindetails if adminrole doesn't exist
+                const adminCheck = await knexInstance('admindetails')
+                    .where('personid', personid)
+                    .select('password')
+                    .first();
+                adminPassword = adminCheck?.password;
+            }
+        }
+
+        if (!user || (!adminPassword && !user.volunteerpassword)) {
             return res.redirect('/login');
         }
 
@@ -537,20 +613,16 @@ router.post('/login-password/:personid', async (req, res) => {
     const password = req.body.password;
 
     try {
-        // Look up user with password check from all detail tables
+        // Look up user with password check from correct tables (per ERD)
         const user = await knexInstance('people as p')
-            .leftJoin('admindetails as ad', 'ad.personid', 'p.personid')
             .leftJoin('volunteerdetails as vd', 'vd.personid', 'p.personid')
-            .leftJoin('participantdetails as pd', 'pd.personid', 'p.personid')
             .where('p.personid', personid)
             .select(
                 'p.personid',
                 'p.email',
                 'p.firstname',
                 'p.lastname',
-                'ad.password as adminpassword',
-                'vd.password as volunteerpassword',
-                'pd.password as participantpassword'
+                'vd.password as volunteerpassword'
             )
             .first();
 
@@ -558,18 +630,44 @@ router.post('/login-password/:personid', async (req, res) => {
             return res.redirect('/login');
         }
 
-        // Compare raw password and determine role
+        // Also check adminrole (per ERD) - try adminrole first, fallback to admindetails
+        let adminPassword = null;
+        try {
+            const adminCheck = await knexInstance('adminrole')
+                .where('personid', personid)
+                .select('password')
+                .first();
+            adminPassword = adminCheck?.password;
+        } catch (e) {
+            // Fallback to admindetails if adminrole doesn't exist
+            const adminCheck = await knexInstance('admindetails')
+                .where('personid', personid)
+                .select('password')
+                .first();
+            adminPassword = adminCheck?.password;
+        }
+
+        // Compare raw password and determine role (per ERD)
         let matchedRole = null;
         let userRole = null;
 
-        if (user.adminpassword === password) {
+        if (adminPassword === password) {
             matchedRole = 'Admin';
             userRole = 'manager';
         } else if (user.volunteerpassword === password) {
-            matchedRole = 'Volunteer';
-            userRole = 'user';
-        } else if (user.participantpassword === password) {
-            matchedRole = 'Participant';
+            // Per ERD: Participants and Volunteers both use volunteerdetails.password
+            // Check actual role from peopleroles to determine if Participant or Volunteer
+            const roles = await knexInstance('peopleroles as pr')
+                .join('roles as r', 'pr.roleid', 'r.roleid')
+                .where('pr.personid', personid)
+                .select('r.rolename');
+            
+            const roleNames = roles.map(r => r.rolename.toLowerCase());
+            if (roleNames.includes('participant')) {
+                matchedRole = 'Participant';
+            } else {
+                matchedRole = 'Volunteer';
+            }
             userRole = 'user';
         }
 
@@ -616,27 +714,40 @@ router.get('/create-password/:personid', async (req, res) => {
     const { personid } = req.params;
 
     try {
-        // Look up user with password check from all detail tables
+        // Look up user with password check from correct tables (per ERD)
         const user = await knexInstance('people as p')
-            .leftJoin('admindetails as ad', 'ad.personid', 'p.personid')
             .leftJoin('volunteerdetails as vd', 'vd.personid', 'p.personid')
-            .leftJoin('participantdetails as pd', 'pd.personid', 'p.personid')
             .where('p.personid', personid)
             .select(
                 'p.personid',
                 'p.email',
-                'ad.password as adminpassword',
-                'vd.password as volunteerpassword',
-                'pd.password as participantpassword'
+                'vd.password as volunteerpassword'
             )
             .first();
+
+        // Also check adminrole (per ERD) - try adminrole first, fallback to admindetails
+        let adminPassword = null;
+        try {
+            const adminCheck = await knexInstance('adminrole')
+                .where('personid', personid)
+                .select('password')
+                .first();
+            adminPassword = adminCheck?.password;
+        } catch (e) {
+            // Fallback to admindetails if adminrole doesn't exist
+            const adminCheck = await knexInstance('admindetails')
+                .where('personid', personid)
+                .select('password')
+                .first();
+            adminPassword = adminCheck?.password;
+        }
 
         if (!user) {
             return res.redirect('/login');
         }
 
-        // If password already exists in any detail table, redirect to password entry
-        if (user.adminpassword || user.volunteerpassword || user.participantpassword) {
+        // If password already exists in correct tables (per ERD), redirect to password entry
+        if (adminPassword || user.volunteerpassword) {
             return res.redirect(`/login-password/${personid}`);
         }
 
@@ -660,17 +771,18 @@ router.post('/create-password/:personid', async (req, res) => {
     const { password, confirmPassword } = req.body;
 
     try {
+        // Validate password is required
+        if (!password || password.length < 8) {
+            return res.redirect(`/create-password/${personid}?error=Password is required and must be at least 8 characters`);
+        }
+        
+        if (password.length > 20) {
+            return res.redirect(`/create-password/${personid}?error=Password must be 20 characters or less`);
+        }
+
         // Validate passwords match
         if (password !== confirmPassword) {
             return res.redirect(`/create-password/${personid}?error=Passwords do not match`);
-        }
-
-        // Validate password length (1-20 characters to match VARCHAR(20))
-        if (!password || password.length < 1) {
-            return res.redirect(`/create-password/${personid}?error=Password is required`);
-        }
-        if (password.length > 20) {
-            return res.redirect(`/create-password/${personid}?error=Password must be 20 characters or less`);
         }
 
         // Check if user has any role assigned
@@ -694,38 +806,64 @@ router.post('/create-password/:personid', async (req, res) => {
             roleToUse = existingRole;
         }
 
-        // Check if password already exists
-        const adminCheck = await knexInstance('admindetails')
-            .where('personid', personid)
-            .first();
-        const volunteerCheck = await knexInstance('volunteerdetails')
-            .where('personid', personid)
-            .first();
-        const participantCheck = await knexInstance('participantdetails')
+        // Check if password already exists (check correct tables per ERD)
+        // Per ERD: Participants → volunteerdetails.password, Admins → adminrole.password
+        let adminCheck = null;
+        let volunteerCheck = null;
+        
+        // Try adminrole first (per ERD), fallback to admindetails if adminrole doesn't exist
+        try {
+            adminCheck = await knexInstance('adminrole')
+                .where('personid', personid)
+                .first();
+        } catch (e) {
+            // If adminrole table doesn't exist, try admindetails
+            adminCheck = await knexInstance('admindetails')
+                .where('personid', personid)
+                .first();
+        }
+        
+        volunteerCheck = await knexInstance('volunteerdetails')
             .where('personid', personid)
             .first();
 
-        if (adminCheck?.password || volunteerCheck?.password || participantCheck?.password) {
+        if (adminCheck?.password || volunteerCheck?.password) {
             return res.redirect(`/login-password/${personid}`);
         }
 
-        // Insert password in correct table based on role
+        // Insert password in correct table based on role (per ERD)
         if (roleToUse.roleid === 3) {
-            // Admin (roleid 3)
-            const adminExists = await knexInstance('admindetails')
-                .where('personid', personid)
-                .first();
-
-            if (adminExists) {
-                await knexInstance('admindetails')
+            // Admin (roleid 3) → store in adminrole.password (per ERD)
+            try {
+                const adminExists = await knexInstance('adminrole')
                     .where('personid', personid)
-                    .update({ password: password });
-            } else {
-                await knexInstance('admindetails')
-                    .insert({ personid: personid, password: password });
+                    .first();
+
+                if (adminExists) {
+                    await knexInstance('adminrole')
+                        .where('personid', personid)
+                        .update({ password: password });
+                } else {
+                    await knexInstance('adminrole')
+                        .insert({ personid: personid, password: password });
+                }
+            } catch (e) {
+                // Fallback to admindetails if adminrole doesn't exist
+                const adminExists = await knexInstance('admindetails')
+                    .where('personid', personid)
+                    .first();
+
+                if (adminExists) {
+                    await knexInstance('admindetails')
+                        .where('personid', personid)
+                        .update({ password: password });
+                } else {
+                    await knexInstance('admindetails')
+                        .insert({ personid: personid, password: password });
+                }
             }
-        } else if (roleToUse.roleid === 2) {
-            // Volunteer (roleid 2)
+        } else {
+            // Participant or Volunteer → store in volunteerdetails.password (per ERD)
             const volunteerExists = await knexInstance('volunteerdetails')
                 .where('personid', personid)
                 .first();
@@ -738,27 +876,9 @@ router.post('/create-password/:personid', async (req, res) => {
                 await knexInstance('volunteerdetails')
                     .insert({ personid: personid, password: password });
             }
-        } else {
-            // Default → Participant (roleid 1)
-            const participantExists = await knexInstance('participantdetails')
-                .where('personid', personid)
-                .first();
-
-            if (participantExists) {
-                await knexInstance('participantdetails')
-                    .where('personid', personid)
-                    .update({ password: password });
-            } else {
-                await knexInstance('participantdetails')
-                    .insert({
-                        personid: personid,
-                        password: password,
-                        participantschooloremployer: '',
-                        participantfieldofinterest: '',
-                        newsletter: false
-                    });
-            }
         }
+
+        console.log('[CREATE-PASSWORD] Password stored for personid:', personid, 'roleid:', roleToUse.roleid);
 
         // Redirect to password entry page to log in
         return res.redirect(`/login-password/${personid}`);
