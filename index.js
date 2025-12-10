@@ -44,7 +44,7 @@ if (process.env.NODE_ENV !== "production") {
     console.log(".env file loaded successfully");
   }
 } else {
-  console.log("Running in production — using Elastic Beanstalk environment variables.");
+  console.log("Running in production — using EB environment variables.");
 }
 
 // =======================
@@ -67,7 +67,7 @@ const dbConfig = {
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
   port: Number(process.env.DB_PORT) || 5432,
-  ssl: { rejectUnauthorized: false }   // Required for AWS RDS
+  ssl: { rejectUnauthorized: false }
 };
 
 // =======================
@@ -95,6 +95,7 @@ pool.on("error", (err) => {
 })();
 
 module.exports = { pool };
+
 
 
 // =======================
@@ -2486,3 +2487,4 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
