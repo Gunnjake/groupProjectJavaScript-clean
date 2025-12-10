@@ -1,0 +1,514 @@
+<!-- frequency.ejs - Bootstrap 5 Styled -->
+<style>
+  /* Remove top padding from main for this page */
+  main.py-5 {
+    padding-top: 0 !important;
+  }
+
+  /* Professional Selection Cards */
+  .selection-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: #ffffff;
+    padding: 2rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .selection-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: transparent;
+    transition: background 0.3s ease;
+  }
+
+  .selection-card:hover {
+    border-color: #E5482E;
+    box-shadow: 0 8px 24px rgba(229, 72, 46, 0.12);
+    transform: translateY(-4px);
+    background: #ffffff;
+  }
+
+  .selection-card:hover::before {
+    background: #E5482E;
+  }
+
+  .selection-card.selected {
+    border-color: #E5482E;
+    background: linear-gradient(to bottom, #fff5f3 0%, #ffffff 100%);
+    box-shadow: 0 8px 24px rgba(229, 72, 46, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .selection-card.selected::before {
+    background: #E5482E;
+  }
+
+  .card-icon {
+    font-size: 2.75rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    display: inline-block;
+  }
+
+  .card-icon.is-unchecked {
+    color: #adb5bd;
+  }
+
+  .card-icon.is-checked {
+    color: #E5482E;
+  }
+
+  .selection-card.selected .card-icon {
+    transform: scale(1.1);
+  }
+
+  .selection-card p {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2F3C48;
+    margin: 0;
+  }
+
+  .selection-card.selected p {
+    color: #E5482E;
+  }
+
+  input[type="radio"] {
+    display: none;
+  }
+</style>
+<div class="container pt-2 pb-5">
+  <!-- Breadcrumbs and Price Summary Row -->
+  <div class="row align-items-center mb-3">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb" class="mb-0">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a href="/cleaningType">1. Cleaning Details</a></li>
+          <li class="breadcrumb-item"><a href="/extra">2. Extras</a></li>
+          <li class="breadcrumb-item active">3. Date/Frequency</li>
+          <li class="breadcrumb-item text-muted">4. Your Details</li>
+          <li class="breadcrumb-item text-muted">5. Review</li>
+          <li class="breadcrumb-item text-muted">6. Payment</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <!-- Price Summary - Orange Box (Dynamic) -->
+      <span id="topPriceBadge" class="badge" style="background-color: #E5482E; color: white; font-size: 1.1rem; padding: 0.5rem 1rem; display: none;">
+        +$0.00
+      </span>
+    </div>
+  </div>
+
+  <!-- Page Header -->
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold text-dark mb-3">Schedule Your Service</h1>
+    <p class="lead text-muted">Select your preferred date, time, and cleaning frequency</p>
+  </div>
+
+  <form action="/yourdetails-start" method="POST" id="frequencyForm">
+    <!-- FREQUENCY SELECTION -->
+    <div class="mb-5">
+      <h3 class="h5 fw-bold text-dark text-center mb-4">
+        <i class="bi bi-calendar-check me-2 text-primary"></i>Cleaning Frequency
+      </h3>
+      <div class="row g-4 justify-content-center">
+        <% 
+          const frequenciesList = typeof frequencies !== 'undefined' && frequencies.length > 0 
+            ? frequencies 
+            : [
+                { value: "One-time", label: "One-time", icon: "📅" },
+                { value: "Weekly", label: "Weekly", icon: "🔄" },
+                { value: "Bi-weekly", label: "Bi-weekly", icon: "📆" }
+              ];
+        %>
+        <% frequenciesList.forEach(freq => { %>
+          <div class="col-6 col-md-4 col-lg-3">
+            <label class="selection-card w-100" for="freq_<%= freq.value.replace(/\s+/g, '_') %>">
+              <input
+                type="radio"
+                id="freq_<%= freq.value.replace(/\s+/g, '_') %>"
+                name="frequency"
+                value="<%= freq.value %>"
+                required
+              >
+              <span class="card-icon" data-icon="freq_<%= freq.value %>">
+                <% 
+                  const freqLower = freq.value.toLowerCase();
+                  if (freqLower.includes('one-time') || freqLower.includes('one time')) { %>
+                  <i class="bi bi-calendar-event"></i>
+                <% } else if (freqLower.includes('weekly')) { %>
+                  <i class="bi bi-arrow-repeat"></i>
+                <% } else if (freqLower.includes('bi-weekly') || freqLower.includes('biweekly')) { %>
+                  <i class="bi bi-calendar-week"></i>
+                <% } else if (freqLower.includes('monthly')) { %>
+                  <i class="bi bi-calendar-month"></i>
+                <% } else { %>
+                  <i class="bi bi-calendar-check"></i>
+                <% } %>
+              </span>
+              <p class="mt-2 mb-0 fw-semibold"><%= freq.label %></p>
+              <% if (freq.description) { %>
+                <p class="small text-muted mt-2"><%= freq.description %></p>
+              <% } %>
+            </label>
+          </div>
+        <% }) %>
+      </div>
+      
+      <!-- Number of Weeks/Months (centered under frequency blocks) -->
+      <div class="row justify-content-center mt-4" id="numWeeksContainer" style="display: none;">
+        <div class="col-12 d-flex justify-content-center">
+          <div class="card shadow-sm border-primary border-2" style="max-width: 500px; width: 100%;">
+            <div class="card-body text-center">
+              <label for="numWeeks" class="form-label fw-bold" id="numWeeksLabel">
+                How many weeks would you like to schedule?
+              </label>
+              <input 
+                type="number" 
+                id="numWeeks" 
+                name="number_of_weeks" 
+                class="form-control" 
+                min="1" 
+                max="52" 
+                value="4"
+                style="color: #000000 !important; max-width: 200px; margin: 0 auto;"
+              >
+              <small class="text-muted d-block mt-2" id="numWeeksHelp">
+                Select how many recurring appointments you'd like to create (1-52 weeks)
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-5">
+
+    <!-- DATE AND TIME SELECTION -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-4">
+            <h3 class="h5 fw-bold text-dark text-center mb-4">
+              <i class="bi bi-clock-history me-2 text-primary"></i>Select Service Date & Time
+            </h3>
+            
+            <div class="mb-4">
+              <label for="dateSelect" class="form-label fw-semibold mb-2">Service Date</label>
+              <select name="requested_date" id="dateSelect" class="form-select form-select-lg" required>
+                <option value="">Select a date...</option>
+                <% if (typeof availableDates !== 'undefined' && availableDates.length > 0) { %>
+                  <% availableDates.forEach(date => { %>
+                    <option value="<%= typeof date.date === 'string' ? date.date : date.date.toISOString().split('T')[0] %>" data-date-id="<%= date.id %>">
+                      <%= date.formatted || new Date(date.date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      }) %>
+                    </option>
+                  <% }) %>
+                <% } else { %>
+                  <option value="" disabled>No available dates. Please check back later.</option>
+                <% } %>
+              </select>
+              <small class="text-muted">Please select from available dates</small>
+            </div>
+
+            <div class="mb-4">
+              <label for="timeSelect" class="form-label fw-semibold mb-2">Available Times</label>
+              <select name="requested_time" id="timeSelect" class="form-select form-select-lg" required disabled style="color: #000000 !important; background-color: #ffffff !important;">
+                <option value="" style="color: #000000 !important; background-color: #ffffff !important;">Select a date first...</option>
+              </select>
+              <small class="text-muted">Please select a date to see available times</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Submit Button -->
+    <div class="text-center mt-5 pt-4 border-top">
+      <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-semibold shadow-sm">
+        Continue to Your Details <i class="bi bi-arrow-right ms-2"></i>
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+/* Force time dropdown text to be black and visible - AGGRESSIVE */
+#timeSelect,
+#timeSelect:not(:disabled),
+#timeSelect:enabled,
+select#timeSelect:not([disabled]),
+select#timeSelect:not(:disabled) {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  cursor: pointer !important;
+}
+
+#timeSelect:focus,
+#timeSelect:not(:disabled):focus,
+#timeSelect:enabled:focus {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border-color: #E5482E !important;
+  box-shadow: 0 0 0 0.25rem rgba(229, 72, 46, 0.25) !important;
+}
+
+#timeSelect option,
+#timeSelect:not(:disabled) option,
+#timeSelect option:not(:disabled),
+select#timeSelect option {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
+
+#timeSelect:disabled,
+select#timeSelect[disabled] {
+  color: #6c757d !important;
+  background-color: #e9ecef !important;
+  cursor: not-allowed !important;
+}
+
+.selection-card {
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border: 2px solid #dee2e6;
+  border-radius: 0.75rem;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: white;
+  padding: 1.5rem;
+}
+.selection-card:hover {
+  border-color: #E5482E;
+  box-shadow: 0 4px 15px rgba(229, 72, 46, 0.15);
+  transform: translateY(-2px);
+}
+.selection-card.selected {
+  border-color: #E5482E;
+  background-color: #fff5f3;
+  box-shadow: 0 4px 15px rgba(229, 72, 46, 0.25);
+}
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+.card-icon.is-unchecked {
+  color: #adb5bd;
+}
+.card-icon.is-checked {
+  color: #E5482E;
+}
+input[type="radio"] {
+  display: none;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const dateSelect = document.getElementById("dateSelect");
+  const timeSelect = document.getElementById("timeSelect");
+  const form = document.getElementById("frequencyForm");
+  const topPriceBadge = document.getElementById('topPriceBadge');
+  
+  // Initialize top price badge with price info from server
+  const initialPriceInfo = <%- JSON.stringify(typeof priceInfo !== 'undefined' ? priceInfo : { basePrice: 0, extrasTotal: 0, subtotal: 0 }) %>;
+  if (initialPriceInfo.subtotal > 0 && topPriceBadge) {
+    topPriceBadge.textContent = `+$${initialPriceInfo.subtotal.toFixed(2)}`;
+    topPriceBadge.style.display = 'inline-block';
+  }
+  
+  // Show/hide number of weeks field based on frequency selection
+  const numWeeksContainer = document.getElementById('numWeeksContainer');
+  const numWeeksInput = document.getElementById('numWeeks');
+  
+  const numWeeksLabel = document.getElementById('numWeeksLabel');
+  const numWeeksHelp = document.getElementById('numWeeksHelp');
+  
+  function updateNumWeeksVisibility() {
+    const selectedFrequency = form.querySelector('input[name="frequency"]:checked');
+    if (selectedFrequency) {
+      const freqValue = selectedFrequency.value.toLowerCase();
+      const isRecurring = !freqValue.includes('one-time') && !freqValue.includes('one time');
+      
+      if (isRecurring) {
+        numWeeksContainer.style.display = 'block';
+        numWeeksInput.required = true;
+        
+        // Update label and help text based on frequency
+        if (freqValue.includes('monthly')) {
+          numWeeksLabel.textContent = 'How many months would you like to schedule?';
+          numWeeksHelp.textContent = 'Select how many recurring appointments you\'d like to create (1-12 months)';
+          numWeeksInput.value = '3';
+          numWeeksInput.max = '12';
+          numWeeksInput.min = '1';
+        } else {
+          // Weekly or bi-weekly
+          numWeeksLabel.textContent = 'How many weeks would you like to schedule?';
+          if (freqValue.includes('weekly')) {
+            numWeeksHelp.textContent = 'Select how many recurring appointments you\'d like to create (1-52 weeks)';
+            numWeeksInput.value = '4';
+            numWeeksInput.max = '52';
+            numWeeksInput.min = '1';
+          } else if (freqValue.includes('bi-weekly') || freqValue.includes('biweekly')) {
+            numWeeksHelp.textContent = 'Select how many recurring appointments you\'d like to create (2-52 weeks)';
+            numWeeksInput.value = '8'; // 8 bi-weekly = 16 weeks total
+            numWeeksInput.max = '26'; // 26 bi-weekly = 52 weeks total
+            numWeeksInput.min = '2';
+          }
+        }
+      } else {
+        numWeeksContainer.style.display = 'none';
+        numWeeksInput.required = false;
+      }
+    }
+  }
+  
+  // Listen for frequency changes
+  if (form) {
+    form.querySelectorAll('input[name="frequency"]').forEach(input => {
+      input.addEventListener('change', updateNumWeeksVisibility);
+    });
+    
+    // Initial check
+    updateNumWeeksVisibility();
+  }
+  
+  dateSelect.addEventListener("change", async () => {
+    const selectedOption = dateSelect.options[dateSelect.selectedIndex];
+    const dateId = selectedOption.dataset.dateId;
+    
+    console.log("Selected date id:", dateId); // Debugging
+    
+    if (!dateId) {
+      console.warn("No date ID found for selected date");
+      timeSelect.disabled = true;
+      timeSelect.innerHTML = '<option value="" style="color: #000000 !important; background-color: #ffffff !important;">Select a date first...</option>';
+      return;
+    }
+    
+    try {
+      console.log(`Fetching time slots for date_id: ${dateId}`);
+      const response = await fetch(`/api/time-slots/${dateId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const timeSlots = await response.json();
+      console.log(`Received ${timeSlots.length} time slots:`, timeSlots);
+      
+      // Clear and rebuild options
+      timeSelect.innerHTML = '<option value="" style="color: #000000 !important; background-color: #ffffff !important;">Select a time...</option>';
+      
+      if (!timeSlots || timeSlots.length === 0) {
+        const noTimesOption = document.createElement('option');
+        noTimesOption.value = '';
+        noTimesOption.textContent = 'No available times';
+        noTimesOption.disabled = true;
+        noTimesOption.setAttribute('style', 'color: #6c757d !important;');
+        timeSelect.appendChild(noTimesOption);
+        timeSelect.disabled = true;
+        console.warn("No time slots available for this date");
+        return;
+      }
+      
+      timeSlots.forEach(slot => {
+        const option = document.createElement('option');
+        // Ensure we use the correct property name
+        const timeSlotValue = slot.time_slot || slot.time || slot.time_slot_id;
+        option.value = timeSlotValue;
+        option.textContent = timeSlotValue;
+        option.setAttribute('style', 'color: #000000 !important; background-color: #ffffff !important;');
+        timeSelect.appendChild(option);
+      });
+      
+      // Enable dropdown and force black color - multiple approaches
+      timeSelect.disabled = false;
+      timeSelect.removeAttribute('disabled');
+      timeSelect.readOnly = false;
+      
+      // Force styles multiple ways
+      timeSelect.style.cssText = 'color: #000000 !important; background-color: #ffffff !important; cursor: pointer !important;';
+      timeSelect.style.color = '#000000';
+      timeSelect.style.backgroundColor = '#ffffff';
+      timeSelect.style.setProperty('color', '#000000', 'important');
+      timeSelect.style.setProperty('background-color', '#ffffff', 'important');
+      timeSelect.classList.remove('disabled');
+      
+      // Force options to have black text
+      setTimeout(() => {
+        const options = timeSelect.options;
+        for (let i = 0; i < options.length; i++) {
+          options[i].style.color = '#000000';
+          options[i].style.backgroundColor = '#ffffff';
+          options[i].style.setProperty('color', '#000000', 'important');
+        }
+        timeSelect.style.color = '#000000';
+        timeSelect.style.backgroundColor = '#ffffff';
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error fetching time slots:', error);
+      timeSelect.disabled = true;
+    }
+  });
+  
+  // Frequency selection behavior
+  if (form) {
+  const inputs = form.querySelectorAll("input[type='radio']");
+
+  inputs.forEach(input => {
+    const card = input.closest(".selection-card");
+    const icon = card.querySelector("[data-icon]");
+
+    if (input.checked) {
+      card.classList.add("selected");
+      icon.classList.add("is-checked");
+    } else {
+    icon.classList.add("is-unchecked");
+    }
+
+    card.addEventListener("click", () => {
+      form.querySelectorAll(`input[name='${input.name}']`).forEach(i => {
+        const c = i.closest(".selection-card");
+        const ic = c.querySelector("[data-icon]");
+        c.classList.remove("selected");
+        ic.classList.remove("is-checked");
+        ic.classList.add("is-unchecked");
+      });
+      
+      input.checked = true;
+      card.classList.add("selected");
+      icon.classList.add("is-checked");
+      icon.classList.remove("is-unchecked");
+      
+      // Update number of weeks visibility when frequency changes
+      updateNumWeeksVisibility();
+    });
+  });
+  }
+});
+</script>

@@ -1,0 +1,69 @@
+<div class="container py-5">
+  <!-- Progress Steps -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/cleaningType">1. Cleaning Details</a></li>
+      <li class="breadcrumb-item"><a href="/extra">2. Extras</a></li>
+      <li class="breadcrumb-item"><a href="/frequency">3. Frequency</a></li>
+      <li class="breadcrumb-item"><a href="/yourdetails">4. Your Details</a></li>
+      <li class="breadcrumb-item"><a href="/review">5. Review</a></li>
+      <li class="breadcrumb-item active">6. Payment</li>
+    </ol>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="text-center mb-5">
+    <h1 class="display-5 fw-bold text-primary mb-3">Payment Information</h1>
+    <p class="lead text-muted">Complete your booking with a secure payment (Mock Payment - No real charges)</p>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <!-- Show Total -->
+      <% if (typeof totalAmount !== 'undefined') { %>
+        <div class="card bg-primary text-white shadow-lg mb-4">
+          <div class="card-body text-center p-4">
+            <h3 class="display-6 fw-bold mb-0">
+              Total: $<%= totalAmount.toFixed(2) %>
+            </h3>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="card shadow-lg border-0">
+        <div class="card-body p-5">
+          <h5 class="card-title mb-4"><i class="bi bi-credit-card me-2"></i>Payment Details</h5>
+          
+          <form action="/summary" method="post">
+            <div class="mb-3">
+              <label for="card_number" class="form-label">Card Number (Mock Payment)</label>
+              <input type="text" class="form-control" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" value="4242 4242 4242 4242" required>
+              <small class="text-muted">Use any card number for testing</small>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="expiry" class="form-label">Expiration Date</label>
+                <input type="text" class="form-control" id="expiry" name="expiry" placeholder="MM/YY" value="12/25" required>
+              </div>
+
+              <div class="col-md-6">
+                <label for="cvv" class="form-label">CVV</label>
+                <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123" value="123" required>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="cardholder_name" class="form-label">Cardholder Name</label>
+              <input type="text" class="form-control" id="cardholder_name" name="cardholder_name" placeholder="John Doe" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+              <i class="bi bi-lock-fill me-2"></i>Complete Booking & Pay
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

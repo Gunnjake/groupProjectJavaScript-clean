@@ -1,0 +1,118 @@
+<style>
+  /* Remove top padding from main for booking pages */
+  main.py-5 {
+    padding-top: 0 !important;
+  }
+</style>
+
+<div class="container pt-2 pb-5">
+  <!-- Breadcrumbs and Price Summary Row -->
+  <div class="row align-items-center mb-3">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb" class="mb-0">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a href="/cleaningType">1. Cleaning Details</a></li>
+          <li class="breadcrumb-item"><a href="/extra">2. Extras</a></li>
+          <li class="breadcrumb-item"><a href="/frequency">3. Frequency</a></li>
+          <li class="breadcrumb-item active">4. Your Details</li>
+          <li class="breadcrumb-item text-muted">5. Review</li>
+          <li class="breadcrumb-item text-muted">6. Payment</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <!-- Price Summary - Orange Box (Static - shows subtotal) -->
+      <% if (typeof priceInfo !== 'undefined' && priceInfo.subtotal > 0) { %>
+        <span class="badge" style="background-color: #E5482E; color: white; font-size: 1.1rem; padding: 0.5rem 1rem;">
+          +$<%= priceInfo.subtotal.toFixed(2) %>
+        </span>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Page Header -->
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold text-dark mb-3">Your Details</h1>
+    <p class="lead text-muted">Please provide your contact information and service address</p>
+  </div>
+
+  <form action="/yourdetails" method="post" class="row g-4">
+    <!-- Contact Information -->
+    <div class="col-12">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+          <h3 class="h5 fw-bold text-dark mb-4">
+            <i class="bi bi-person-fill me-2 text-primary"></i>Contact Information
+          </h3>
+
+    <div class="col-md-6">
+      <label for="first_name" class="form-label fw-semibold">First Name</label>
+      <input type="text" class="form-control form-control-lg" id="first_name" name="first_name" required>
+    </div>
+
+    <div class="col-md-6">
+      <label for="last_name" class="form-label fw-semibold">Last Name</label>
+      <input type="text" class="form-control form-control-lg" id="last_name" name="last_name" required>
+    </div>
+
+    <div class="col-md-6">
+      <label for="email" class="form-label fw-semibold">Email Address</label>
+      <input type="email" class="form-control form-control-lg" id="email" name="email" value="<%= session.homepageData?.email || session.step4?.email || '' %>" required>
+    </div>
+
+    <div class="col-md-6">
+      <label for="phone" class="form-label fw-semibold">Phone Number</label>
+      <input type="tel" class="form-control form-control-lg" id="phone" name="phone" value="<%= session.homepageData?.phone || session.step4?.phone || '' %>" required>
+    </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Address -->
+    <div class="col-12">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+          <h3 class="h5 fw-bold text-dark mb-4">
+            <i class="bi bi-geo-alt-fill me-2 text-primary"></i>Service Address
+          </h3>
+
+    <div class="col-12">
+      <label for="address_line1" class="form-label fw-semibold">Address Line 1</label>
+      <input type="text" class="form-control form-control-lg" id="address_line1" name="address_line1" required>
+    </div>
+
+    <div class="col-12">
+      <label for="address_line2" class="form-label fw-semibold">Address Line 2 <span class="text-muted">(optional)</span></label>
+      <input type="text" class="form-control form-control-lg" id="address_line2" name="address_line2">
+    </div>
+
+    <div class="col-md-6">
+      <label for="city" class="form-label fw-semibold">City</label>
+      <input type="text" class="form-control form-control-lg" id="city" name="city" required>
+    </div>
+
+    <div class="col-md-3">
+      <label for="state" class="form-label fw-semibold">State</label>
+      <select class="form-select form-select-lg" id="state" name="state" required>
+        <option value="UT">UT</option>
+        <option value="CA">CA</option>
+        <option value="NV">NV</option>
+        <option value="AZ">AZ</option>
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label for="zipcode" class="form-label fw-semibold">Zip Code</label>
+      <input type="text" class="form-control form-control-lg" id="zipcode" name="zipcode" value="<%= session.homepageData?.zip || session.step4?.zipcode || '' %>" required>
+    </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 text-center mt-5 pt-4 border-top">
+      <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-semibold shadow-sm">
+        Continue to Review <i class="bi bi-arrow-right ms-2"></i>
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,46 @@
+<!-- Admin Dashboard - Bootstrap 5 Styled -->
+<div class="container-fluid p-0">
+  <div class="row g-0">
+    <!-- SIDEBAR -->
+    <aside class="col-md-3 col-lg-2 bg-dark text-white vh-100 position-sticky top-0" style="overflow-y: auto;">
+      <div class="p-4 border-bottom border-secondary">
+        <h5 class="mb-0 fw-bold text-white"><i class="bi bi-person-circle me-2"></i><%= session.admin_username || 'Admin' %></h5>
+      </div>
+      <nav class="nav flex-column p-3">
+        <a href="/admin" class="nav-link text-white mb-2 <%= section === 'active' ? 'bg-primary rounded' : '' %>">
+          <i class="bi bi-clock-history me-2"></i>Active
+        </a>
+        <a href="/admin/completed" class="nav-link text-white mb-2 <%= section === 'completed' ? 'bg-primary rounded' : '' %>">
+          <i class="bi bi-check-circle me-2"></i>Completed
+        </a>
+        <a href="/admin/analytics" class="nav-link text-white mb-2 <%= section === 'analytics' ? 'bg-primary rounded' : '' %>">
+          <i class="bi bi-graph-up me-2"></i>Analytics
+        </a>
+        <a href="/admin/services" class="nav-link text-white mb-2 <%= section === 'services' ? 'bg-primary rounded' : '' %>">
+          <i class="bi bi-tools me-2"></i>Services
+        </a>
+        <a href="/admin/dates-times" class="nav-link text-white mb-2 <%= section === 'dates-times' ? 'bg-primary rounded' : '' %>">
+          <i class="bi bi-calendar-event me-2"></i>Date/Time
+        </a>
+        <a href="/admin/testimonials" class="nav-link text-white mb-2 <%= section === 'testimonials' ? 'bg-primary rounded' : '' %>">
+          <i class="bi bi-chat-quote me-2"></i>Testimonials
+        </a>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="col-md-9 col-lg-10 p-4">
+      <%- include('_adminSections', {
+        section,
+        activeAppointments,
+        completedAppointments,
+        analytics,
+        services,
+        testimonials,
+        datesWithTimes,
+        error,
+        success
+      }) %>
+    </main>
+  </div>
+</div>

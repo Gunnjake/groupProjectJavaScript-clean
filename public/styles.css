@@ -1,0 +1,680 @@
+/* ============================================
+   HUUS CLEANING - BOOTSTRAP THEME CUSTOM STYLES
+   Updated Color Scheme
+============================================ */
+:root {
+  --bs-primary: #E5482E;
+  --bs-primary-dark: #C43D27;
+  --bs-primary-light: #F9D2CB;
+
+  --bs-secondary: #2F3C48;
+  --bs-secondary-light: #5C6B78;
+
+  --bs-accent-1: #F3E8E2;
+  --bs-accent-2: #F0B357;
+  --bs-accent-3: #1E8A8A;
+
+  --bs-success: #3BAA5C;
+  --bs-warning: #F6C042;
+  --bs-danger: #CC2A2A;
+  --bs-info: #3A8DD1;
+
+  --bs-gray-900: #1E1E1E;
+  --bs-gray-700: #4B4B4B;
+  --bs-gray-500: #7A7A7A;
+  --bs-gray-300: #D1D1D1;
+  --bs-gray-100: #F3F3F3;
+  
+  --primary: #E5482E;
+  --primary-dark: #C43D27;
+  --primary-light: #F9D2CB;
+  
+  /* Card and shadow variables */
+  --card-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  --btn-shadow: 0 6px 20px rgba(229, 72, 46, 0.3);
+}
+
+* { box-sizing: border-box; }
+
+html {
+  overflow-y: scroll;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--gray-800);
+  background: white;
+  line-height: 1.6;
+}
+
+a { text-decoration: none; color: inherit; }
+
+.container {
+  max-width: 1200px;
+  padding: 0 24px;
+  margin: 0 auto;
+}
+
+/* ============================================
+   Header
+============================================ */
+.site-header {
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+  height: 70px;        /* locked height */
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0;          /* remove vertical padding so height stays fixed */
+}
+.site-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 0 0; /* reset for clarity */
+  height: 100%;
+  padding: 10px 24px;
+}
+
+.site-header .logo img {
+  height: 40px;      /* exact size */
+  display: block;
+
+
+}
+
+.logo {
+  font-weight: 800;
+  font-size: 1.75rem;
+  color: var(--primary);
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+nav a {
+  padding: 8px 16px;
+  font-weight: 600;
+  color: var(--gray-700);
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+nav a:hover:not(.btn) {
+  background: var(--gray-100);
+  color: var(--primary);
+}
+
+.btn {
+  background: var(--primary);
+  color: white !important;
+  padding: 10px 24px !important;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: var(--btn-shadow);
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: var(--primary-dark);
+}
+
+
+/* ============================================
+   Hero
+============================================ */
+.hero {
+  width: 100vw;                 /* stretch all the way across */
+  margin-left: calc(50% - 50vw); /* break out of the centered layout */
+  margin-right: calc(50% - 50vw);
+  background: #E5482E;          /* your orange */
+  padding: 80px 0 100px 0;
+  color: white;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 480px;
+  gap: 48px;
+  align-items: center;
+}
+
+.hero-copy h2 {
+  font-size: 2.75rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.hero-copy p {
+  font-size: 1.2rem;
+  margin-bottom: 32px;
+}
+.hero-inner {
+  max-width: 1200px;        /* same width as container */
+  margin: 0 auto;           /* center horizontally */
+  padding: 0 24px;          /* keeps spacing on left/right */
+}
+
+.cta {
+  display: inline-block;
+  padding: 14px 28px;
+  background: white;
+  color: var(--primary);
+  font-weight: 700;
+  border-radius: 10px;
+  transition: 0.2s;
+}
+
+.cta:hover {
+  background: #eefaff;
+}
+
+/* ============================================
+   Booking Form
+============================================ */
+.booking-form {
+  background: white;
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+.booking-form .notice {
+  background: #10b981;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.booking-form form,
+.booking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.booking-form input,
+.booking-form select {
+  padding: 14px;
+  border: 2px solid var(--gray-200);
+  border-radius: 10px;
+  background: var(--gray-50);
+  font-size: 0.95rem;
+  transition: 0.2s;
+}
+
+.booking-form input:focus,
+.booking-form select:focus {
+  border-color: var(--primary);
+  outline: none;
+  background: white;
+}
+
+.booking-form button {
+  grid-column: 1 / -1;
+  padding: 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: 0.2s;
+}
+
+.booking-form button:hover {
+  background: var(--primary-dark);
+}
+
+/* ============================================
+   Services
+============================================ */
+.services {
+  padding: 80px 0;
+  background: var(--gray-50);
+}
+
+.services h3 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.services .grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.service-card {
+  background: white;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+  transition: 0.2s;
+}
+
+.service-card h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.3rem;
+}
+
+.service-card ul {
+  padding-left: 20px;
+  margin-bottom: 20px;
+}
+
+.small-btn {
+  display: inline-block;
+  background: var(--primary);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  transition: 0.2s;
+  font-weight: 700;
+}
+
+.small-btn:hover {
+  background: var(--primary-dark);
+}
+
+/* ============================================
+   Testimonials
+============================================ */
+.testimonials {
+  padding: 80px 0;
+}
+
+.testimonials h3 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.testimonials blockquote {
+  background: var(--gray-50);
+  padding: 28px;
+  border-radius: 14px;
+  border-left: 6px solid var(--primary);
+  margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+
+.testimonials cite {
+  display: block;
+  margin-top: 8px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ============================================
+   Footer (Sticky)
+============================================ */
+.site-footer {
+  background: var(--gray-900);
+  color: white;
+  padding: 32px 0;
+  text-align: center;
+}
+
+/* Full height + push footer */
+html, body { height: 100%; }
+body.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+main.content { flex: 1; }
+
+/* ============================================
+   Responsive
+============================================ */
+@media (max-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-form form {
+    grid-template-columns: 1fr;
+  }
+}
+/* Booking Form Layout Cleanup */
+.booking-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+  width: 100%;
+  justify-items: center;
+}
+
+.booking-grid .form-group {
+  width: 100%;
+}
+
+.booking-grid .full {
+  grid-column: 1 / -1;  /* spans both columns */
+}
+
+/* Input + Select unified styling */
+.booking-grid input,
+.booking-grid select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--gray-200);
+  border-radius: 10px;
+  background: white;
+  font-size: 1rem;
+  color: #1f2937 !important;
+  transition: .2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.booking-grid input::placeholder {
+  color: #9ca3af !important;
+  opacity: 1;
+}
+
+.booking-grid select {
+  color: #1f2937 !important;
+  cursor: pointer;
+}
+
+.booking-grid select option {
+  color: #1f2937 !important;
+  background: white;
+  padding: 8px;
+}
+
+.booking-grid select option:disabled {
+  color: #9ca3af;
+}
+
+.booking-grid input:focus,
+.booking-grid select:focus {
+  outline: none;
+  background: white;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(229, 72, 46, 0.15);
+}
+
+/* Center the submit button nicely */
+.booking-grid button.full {
+  padding: 16px;
+  background: var(--primary);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  margin-top: 10px;
+  width: 100%;
+  transition: 0.2s;
+}
+
+.booking-grid button.full:hover {
+  background: var(--primary-dark);
+}
+
+/* Booking step page styles */
+.booking-step-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #fff;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.05);
+  border-radius: 8px;
+}
+
+.booking-step-header {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.booking-step-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.booking-step-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.booking-step-form input[type="text"],
+.booking-step-form input[type="email"],
+.booking-step-form input[type="tel"],
+.booking-step-form select {
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.booking-step-form button {
+  background-color: #E5482E; /* primary button color */
+  color: #fff;
+  padding: 14px;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.booking-step-form button:hover {
+  background-color: #E5482E;
+}
+
+.extras-list label,
+.frequency-grid button {
+  display: block;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #f9f9f9;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.frequency-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.frequency-grid button {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
+
+.frequency-grid button.selected,
+.frequency-grid button:hover {
+  background: #E5482E;
+  color: #fff;
+  border-color: #E5482E;
+}
+.breadcrumb-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 25px;
+  font-size: 15px;
+}
+
+.breadcrumb-container a {
+  text-decoration: none;
+  color: #999;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+.breadcrumb-container a:hover {
+  background: #efefef;
+}
+
+.breadcrumb-container .active-step {
+  font-weight: bold;
+  color: #E5482E;
+}
+
+.breadcrumb-container span {
+  color: #ccc;
+}
+.disabled-step {
+  color: #ccc;
+  padding: 6px 10px;
+}
+
+.booking-summary-box {
+  background: #fafafa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  margin-bottom: 25px;
+}
+
+.booking-summary-box h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.booking-summary-box ul {
+  padding-left: 20px;
+}
+
+.review-next-btn {
+  background-color: #E5482E;
+  color: white;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.review-next-btn:hover {
+  background-color: #E5482E;
+}
+
+.extras-review-list {
+  padding-left: 24px;   /* fixes the left push */
+  margin: 0;
+}
+
+.extras-review-list li {
+  padding: 6px 0;
+  font-size: 16px;
+  color: #444;
+}
+
+.no-extras {
+  color: #777;
+  font-style: italic;
+}
+
+.frequency-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.frequency-card {
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  transition: 0.2s ease;
+  background: white;
+}
+
+.frequency-card:hover {
+  border-color: #4a90e2;
+  background: #f7faff;
+}
+
+.frequency-card input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+}
+
+.frequency-info h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.frequency-info p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.frequency-btn-container {
+  text-align: center;
+  margin-top: 25px;
+}
+/* Prevent Tailwind from leaking into header/footer */
+.safe-scope * {
+  all: unset;
+  all: revert;  /* Best isolation */
+}
+
+/* ADMIN LAYOUT */
+.admin-wrapper {
+  display: flex;
+  min-height: 600px;
+  margin-top: 40px;
+  gap: 20px;
+}
+
+.admin-sidebar {
+  width: 220px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-sidebar a {
+  padding: 12px;
+  font-weight: 600;
+  color: #444;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+.admin-sidebar a:hover {
+  background: #eaeaea;
+}
+
+.admin-sidebar a.active {
+  background: #E5482E;
+  color: white;
+}
+
+.admin-main {
+  flex: 1;
+  padding: 20px;
+}

@@ -1,0 +1,131 @@
+<!-- PAGE HEADER -->
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold text-primary mb-3">Our Cleaning Services</h1>
+    <p class="lead text-muted mb-4">Explore our cleaning packages and add-on services designed for homes, vacation rentals, and custom needs.</p>
+    <img src="/images/OurServices.jpg" alt="Our Cleaning Services" class="img-fluid rounded shadow mb-4" style="max-width: 100%; height: auto;">
+  </div>
+
+  <!-- CLEANING TYPES SECTION -->
+  <section class="mb-5">
+    <div class="text-center mb-4">
+      <h2 class="display-6 fw-bold text-primary mb-2">Cleaning Types</h2>
+      <p class="text-muted">Choose the perfect cleaning service for your needs</p>
+    </div>
+
+    <div class="row g-4">
+      <% if (typeof cleaningTypes !== 'undefined' && cleaningTypes.length > 0) { %>
+        <% cleaningTypes.forEach(ct => { %>
+          <div class="col-md-6">
+            <div class="card h-100 shadow-sm border-0 overflow-hidden">
+              <div class="row g-0 h-100">
+                <div class="col-md-5">
+                  <% 
+                    let cleaningTypeImage = '/images/groupphoto.png';
+                    const ctNameLower = ct.name.toLowerCase();
+                    if (ctNameLower.includes('residential') || ctNameLower.includes('home')) {
+                      cleaningTypeImage = '/images/Residential.jpg';
+                    } else if (ctNameLower.includes('vacation') || ctNameLower.includes('rental')) {
+                      cleaningTypeImage = '/images/Vacation.jpg';
+                    }
+                  %>
+                  <img src="<%= cleaningTypeImage %>" alt="<%= ct.name %>" class="w-100 h-100" style="min-height: 400px; object-fit: cover;">
+                </div>
+                <div class="col-md-7">
+                  <div class="card-body d-flex flex-column p-5 h-100">
+                    <h3 class="card-title text-primary fw-bold mb-3 fs-2"><%= ct.name %></h3>
+                    
+                    <% if (ct.description) { %>
+                      <p class="card-text text-muted mb-4 fs-5"><%= ct.description %></p>
+                    <% } %>
+
+                    <% if (ct.price_1_bed || ct.price_2_bed || ct.price_3_bed || ct.price_4_bed) { %>
+                      <div class="mb-4">
+                        <p class="fw-bold mb-3 fs-5">Pricing:</p>
+                        <ul class="list-unstyled mb-0">
+                          <% if (ct.price_1_bed) { %>
+                            <li class="mb-2 fs-5"><i class="bi bi-check-circle-fill text-primary me-2"></i>1 Bedroom: $<%= ct.price_1_bed %></li>
+                          <% } %>
+                          <% if (ct.price_2_bed) { %>
+                            <li class="mb-2 fs-5"><i class="bi bi-check-circle-fill text-primary me-2"></i>2 Bedrooms: $<%= ct.price_2_bed %></li>
+                          <% } %>
+                          <% if (ct.price_3_bed) { %>
+                            <li class="mb-2 fs-5"><i class="bi bi-check-circle-fill text-primary me-2"></i>3 Bedrooms: $<%= ct.price_3_bed %></li>
+                          <% } %>
+                          <% if (ct.price_4_bed) { %>
+                            <li class="mb-2 fs-5"><i class="bi bi-check-circle-fill text-primary me-2"></i>4 Bedrooms: $<%= ct.price_4_bed %></li>
+                          <% } %>
+                        </ul>
+                      </div>
+                    <% } %>
+
+                    <a href="/cleaningType" class="btn btn-primary btn-lg w-100 mt-auto">Book Now</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="col-12 text-center">
+          <p class="text-muted">No cleaning types available.</p>
+        </div>
+      <% } %>
+    </div>
+  </section>
+
+  <hr class="my-5">
+
+  <!-- EXTRAS/ADD-ONS SECTION -->
+  <section class="mt-5">
+    <div class="text-center mb-4">
+      <h2 class="display-6 fw-bold text-primary mb-2">Add-On Services</h2>
+      <p class="text-muted">Enhance your cleaning with additional services</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+      <% if (typeof extras !== 'undefined' && extras.length > 0) { %>
+        <% extras.forEach(extra => { %>
+          <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card h-100 shadow-sm border-0">
+              <% 
+                let extraImage = '/images/groupphoto.png';
+                const extraNameLower = extra.name.toLowerCase();
+                if (extraNameLower.includes('window') || extraNameLower.includes('glass')) {
+                  extraImage = '/images/WindowCleaning.jpg';
+                } else if (extraNameLower.includes('dish') || extraNameLower.includes('washing')) {
+                  extraImage = '/images/DishWashing.jpg';
+                } else if (extraNameLower.includes('laundry')) {
+                  extraImage = '/images/Laundry.jpg';
+                } else if (extraNameLower.includes('oven') || extraNameLower.includes('kitchen')) {
+                  extraImage = '/images/Oven.jpg';
+                } else if (extraNameLower.includes('fridge') || extraNameLower.includes('refrigerator')) {
+                  extraImage = '/images/Fridge.jpg';
+                }
+              %>
+              <img src="<%= extraImage %>" alt="<%= extra.name %>" class="card-img-top" style="height: 180px; object-fit: cover;">
+              <div class="card-body d-flex flex-column">
+                <h3 class="card-title text-primary fw-bold"><%= extra.name %></h3>
+
+                <% if (extra.price) { %>
+                  <p class="display-6 fw-bold text-dark mb-3">$<%= extra.price %></p>
+                <% } %>
+
+                <% if (extra.description) { %>
+                  <p class="card-text text-muted mb-3"><%= extra.description %></p>
+                <% } %>
+
+                <a href="/cleaningType" class="btn btn-outline-primary mt-auto">Add to Booking</a>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="col-12 text-center">
+          <p class="text-muted">No add-on services available.</p>
+        </div>
+      <% } %>
+    </div>
+  </section>
+
+</div>

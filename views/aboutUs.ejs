@@ -1,0 +1,120 @@
+<!-- HERO SECTION -->
+<section class="bg-light py-5 mb-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-10 text-center">
+
+        <!-- Story Hero Image -->
+        <img src="/images/groupphoto.png"
+             alt="Huus Cleaning team members providing professional cleaning services" 
+             class="img-fluid rounded mb-4 shadow"
+             style="object-fit: cover; width: 100%; max-height: 400px;">
+
+        <h1 class="display-4 fw-bold text-primary mb-4">The Huus Story</h1>
+
+        <p class="lead mb-4">
+          Discover what makes Huus the trusted name in creating beautifully clean 
+          and comfortable spaces in the Wasatch Back.
+        </p>
+
+        <a href="/cleaningType" class="btn btn-primary btn-lg" aria-label="Book your cleaning appointment now">Book Your Cleaning Now</a>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- STORY SECTION -->
+<section class="py-5" aria-label="Our Story">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-10 col-xl-9">
+        <h2 class="display-6 fw-bold text-primary mb-4">Built on Better Standards in the Wasatch Back</h2>
+        <p class="lead mb-4">Every great service starts with an elevated perspective. For Huus, our concept was born from the understanding that a truly clean home is the foundation of a happy life. We noticed a gap in the market for cleaning services that were both meticulous and deeply committed to the client experience.</p>
+        <p class="lead">Founded in 2025 with a dedication to domestic excellence, Huus began with a powerful mission: to redefine routine cleaning. We restore peace, giving our clients back their most valuable asset—time—and absolute confidence in their environment. Our name, Huus, reflects our Scandinavian-inspired focus on simplicity, quality, and well-being.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="my-5">
+
+<!-- MISSION SECTION -->
+<section class="py-5 bg-light" aria-label="Our Mission">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-10 col-xl-9">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-5">
+            <h2 class="display-6 fw-bold text-primary mb-4">The Huus Difference: Our Mission</h2>
+            <p class="lead mb-4">Our mission is to deliver only the most skilled and reliable cleaners to your home. We go the extra mile to handpick only the most qualified and trustworthy cleaners, ensuring you receive the highest-quality house cleaning service possible.</p>
+            
+            <h3 class="h4 fw-bold border-bottom border-primary border-3 pb-2 mb-3">Why Our Team Stands Out</h3>
+            <p class="mb-0">Team members picked with care: Only a small percentage of applicants get chosen to be on our cleaning company system. Yes, we only hire the best! This is NOT an Uber-type service where just anyone can sign up. We have had a lengthy interview process to make sure you get only the BEST house cleaners near you, period.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="my-5">
+
+<!-- VETTING PROCESS HORIZONTAL SCROLL SECTION -->
+<section class="py-5" aria-label="Screening Process">
+  <div class="container-fluid px-4">
+    <div class="text-center mb-5">
+      <h2 class="display-6 fw-bold text-primary mb-3">Our Streamlined 5-Step Screening Process</h2>
+      <p class="lead text-muted">We believe trust starts with transparency. Here is how we ensure only the best join the Huus team.</p>
+    </div>
+    
+    <% 
+      const steps = [
+        { number: 1, title: 'Online Application', desc: 'All professional cleaner applicants must complete our thorough online screening. Only those who pass move on to Phase 2.', color: 'success' },
+        { number: 2, title: 'Phone Interview', desc: 'Next, a Huus representative conducts a detailed phone interview with the cleaner. During the call, we assess their credibility and review their experience with home and Airbnb cleaning services.', color: 'info' },
+        { number: 3, title: 'Video Call Vetting', desc: 'After a successful phone interview, we conduct a video call to thoroughly vet the candidate. Only the best make it through.', color: 'warning' },
+        { number: 4, title: 'Voluntary Orientation', desc: 'If a local cleaner makes it through these three steps, they move on to the voluntary orientation phase to fully understand the Huus Method.', color: 'primary' },
+        { number: 5, title: 'Background Check', desc: 'The final step is a thorough background check to ensure your cleaner is fully vetted and trustworthy.', color: 'danger' }
+      ];
+    %>
+    
+    <div class="steps-scroll-container" style="overflow-x: auto; overflow-y: hidden; padding-bottom: 20px; scrollbar-width: thin; scrollbar-color: #E5482E #f3f3f3;" role="region" aria-label="Screening process steps" tabindex="0">
+      <div class="d-flex flex-nowrap gap-4" style="width: max-content;">
+        <% steps.forEach((step, index) => { %>
+          <div class="flex-shrink-0" style="width: 350px; min-width: 350px;">
+            <div class="card border-start border-<%= step.color %> border-4 shadow-lg h-100">
+              <div class="card-body p-4 text-center">
+                <div class="display-3 text-<%= step.color %> mb-3 fw-bold"><%= step.number %></div>
+                <h3 class="card-title text-<%= step.color %> fw-bold mb-3 h5">Step <%= step.number %>: <%= step.title %></h3>
+                <p class="card-text mb-0"><%= step.desc %></p>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    
+    <style>
+      .steps-scroll-container::-webkit-scrollbar {
+        height: 8px;
+      }
+      .steps-scroll-container::-webkit-scrollbar-track {
+        background: #f3f3f3;
+        border-radius: 10px;
+      }
+      .steps-scroll-container::-webkit-scrollbar-thumb {
+        background: #E5482E;
+        border-radius: 10px;
+      }
+      .steps-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #C43D27;
+      }
+    </style>
+  </div>
+</section>
+
+<hr class="my-5">
+
+<!-- TESTIMONIALS SECTION -->
+<%- include("partials/testimonials", { testimonials }) %>

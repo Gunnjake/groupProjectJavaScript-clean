@@ -1,0 +1,137 @@
+<!-- TESTIMONIALS SECTION -->
+<section class="py-5 bg-light" aria-label="Customer Testimonials">
+  <div class="container" style="padding-left: 80px; padding-right: 80px;">
+    <div class="text-center mb-5">
+      <h2 class="display-6 fw-bold text-primary mb-3">What Our Clients Say About Huus</h2>
+    </div>
+    
+    <div class="row justify-content-center position-relative">
+      <!-- Previous Button (outside box, left side) -->
+      <button id="aboutPrevTestimonial" class="btn btn-primary rounded-circle position-absolute top-50 translate-middle-y" style="left: -70px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; z-index: 10;" aria-label="Previous testimonial">
+        <i class="bi bi-chevron-left fs-4" aria-hidden="true"></i>
+        <span class="visually-hidden">Previous testimonial</span>
+      </button>
+
+      <!-- Testimonial Card -->
+      <div class="col-md-10 col-lg-8">
+        <div class="card border-start border-primary border-4 shadow-sm">
+          <div class="card-body p-5">
+            <div id="aboutTestimonialContent" role="region" aria-live="polite" aria-label="Current testimonial">
+              <!-- Testimonial content will be loaded here by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next Button (outside box, right side) -->
+      <button id="aboutNextTestimonial" class="btn btn-primary rounded-circle position-absolute top-50 translate-middle-y" style="right: -70px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; z-index: 10;" aria-label="Next testimonial">
+        <i class="bi bi-chevron-right fs-4" aria-hidden="true"></i>
+        <span class="visually-hidden">Next testimonial</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+// Testimonials data from database
+const aboutTestimonials = [
+  <% if (testimonials && testimonials.length > 0) { %>
+    <% testimonials.forEach((t, index) => { %>
+  {
+    name: '<%= t.name.replace(/'/g, "\\'") %>',
+    quote: '<%= t.quote.replace(/'/g, "\\'") %>'
+  }<%= index < testimonials.length - 1 ? ',' : '' %>
+    <% }) %>
+  <% } %>
+];
+
+console.log("Testimonials loaded:", aboutTestimonials);
+
+let currentAboutTestimonialIndex = 0;
+let aboutAutoAdvanceInterval = null;
+
+function displayAboutTestimonial(index) {
+  if (aboutTestimonials.length === 0) {
+    document.getElementById('aboutTestimonialContent').innerHTML = '<p class="lead text-muted">No testimonials available right now. Experience the Huus difference and share your feedback!</p>';
+    return;
+  }
+  
+  const testimonial = aboutTestimonials[index];
+  const contentDiv = document.getElementById('aboutTestimonialContent');
+  
+  // Get initials from name
+  const getInitials = (name) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+  
+  const initials = getInitials(testimonial.name);
+  
+  contentDiv.innerHTML = `
+    <div class="row g-0 align-items-center">
+      <div class="col-md-4 text-center">
+        <div class="rounded-circle mb-3 d-inline-flex align-items-center justify-content-center text-white fw-bold" style="width: 120px; height: 120px; background-color: #E5482E; font-size: 2.5rem;" role="img" aria-label="Initials for ${testimonial.name}">
+          ${initials}
+        </div>
+        <h5 class="card-title mb-1">${testimonial.name}</h5>
+        <small class="text-muted d-block">Verified Customer</small>
+      </div>
+      <div class="col-md-8">
+        <blockquote class="mb-3" cite="${testimonial.name}">
+          <p class="card-text fst-italic fs-5 mb-0">"${testimonial.quote}"</p>
+        </blockquote>
+        <div class="text-primary" role="img" aria-label="5 out of 5 stars">
+          <i class="bi bi-star-fill" aria-hidden="true"></i>
+          <i class="bi bi-star-fill" aria-hidden="true"></i>
+          <i class="bi bi-star-fill" aria-hidden="true"></i>
+          <i class="bi bi-star-fill" aria-hidden="true"></i>
+          <i class="bi bi-star-fill" aria-hidden="true"></i>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Reset auto-advance timer
+  resetAboutAutoAdvance();
+}
+
+function nextAboutTestimonial() {
+  currentAboutTestimonialIndex = (currentAboutTestimonialIndex + 1) % aboutTestimonials.length;
+  displayAboutTestimonial(currentAboutTestimonialIndex);
+}
+
+function prevAboutTestimonial() {
+  currentAboutTestimonialIndex = (currentAboutTestimonialIndex - 1 + aboutTestimonials.length) % aboutTestimonials.length;
+  displayAboutTestimonial(currentAboutTestimonialIndex);
+}
+
+function resetAboutAutoAdvance() {
+  // Clear existing interval
+  if (aboutAutoAdvanceInterval) {
+    clearInterval(aboutAutoAdvanceInterval);
+  }
+  
+  // Set new interval - auto-advance every 15 seconds
+  aboutAutoAdvanceInterval = setInterval(function() {
+    nextAboutTestimonial();
+  }, 15000);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  if (aboutTestimonials.length > 0) {
+    displayAboutTestimonial(0);
+    document.getElementById('aboutNextTestimonial').addEventListener('click', nextAboutTestimonial);
+    document.getElementById('aboutPrevTestimonial').addEventListener('click', prevAboutTestimonial);
+    
+    // Start auto-advance
+    resetAboutAutoAdvance();
+  } else {
+    document.getElementById('aboutTestimonialContent').innerHTML = '<p class="lead text-muted">No testimonials available right now. Experience the Huus difference and share your feedback!</p>';
+  }
+});
+</script>
+

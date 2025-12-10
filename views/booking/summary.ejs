@@ -1,0 +1,141 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <!-- Success/Error Message -->
+      <div class="text-center mb-5">
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="display-1 text-danger mb-3">⚠</div>
+          <h1 class="display-5 fw-bold text-danger mb-3">Booking Error</h1>
+          <p class="lead text-muted"><%= error %></p>
+        <% } else { %>
+          <div class="display-1 text-success mb-3">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <h1 class="display-5 fw-bold text-success mb-3">Booking Confirmed!</h1>
+          <p class="lead text-muted mb-3">Thank you for your booking.</p>
+          <% if (typeof bookingId !== 'undefined' && bookingId) { %>
+            <p class="text-muted">Booking ID: <strong class="text-primary">#<%= bookingId %></strong></p>
+          <% } %>
+        <% } %>
+      </div>
+
+      <!-- Booking Summary Card -->
+      <div class="card shadow-lg border-0">
+        <div class="card-body p-5">
+          <h3 class="text-primary fw-bold mb-4"><i class="bi bi-receipt me-2"></i>Booking Summary</h3>
+
+          <!-- CLEANING DETAILS -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-house-door me-2"></i>Cleaning Details</h4>
+            <div class="row">
+              <div class="col-md-6 mb-2"><strong>Bedrooms:</strong> <%= session.step1?.bedrooms || "N/A" %></div>
+              <div class="col-md-6 mb-2"><strong>Cleaning Type:</strong> <%= session.step1?.cleaningType || "N/A" %></div>
+            </div>
+          </div>
+
+          <!-- EXTRAS -->
+          <% if (typeof addOnNames !== 'undefined' && addOnNames.length > 0) { %>
+            <div class="mb-4 pb-4 border-bottom">
+              <h4 class="text-primary fw-bold mb-3"><i class="bi bi-plus-circle me-2"></i>Extras Selected</h4>
+              <ul class="list-unstyled mb-0">
+                <% addOnNames.forEach(addOn => { %>
+                  <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i><%= addOn.name %><% if (addOn.price) { %> - $<%= addOn.price %><% } %></li>
+                <% }) %>
+              </ul>
+            </div>
+          <% } %>
+
+          <!-- DATE/TIME & FREQUENCY -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-calendar-check me-2"></i>Schedule</h4>
+            <div class="row">
+              <div class="col-md-6 mb-2">
+                <strong>Frequency:</strong> <%= session.step3?.frequency || "N/A" %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Date:</strong> 
+                <% if (session.step3?.requested_date) { %>
+                  <%= new Date(session.step3.requested_date).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  }) %>
+                <% } else { %>
+                  Not selected
+                <% } %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Time:</strong> <%= session.step3?.requested_time || "Not selected" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- YOUR DETAILS -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-person me-2"></i>Contact Information</h4>
+            <div class="row">
+              <div class="col-md-6 mb-2">
+                <strong>Name:</strong> <%= session.step4?.first_name || "N/A" %> <%= session.step4?.last_name || "" %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Email:</strong> <%= session.step4?.email || "N/A" %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Phone:</strong> <%= session.step4?.phone || "N/A" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADDRESS -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>Service Address</h4>
+            <p class="mb-1"><%= session.step4?.address_line1 || "N/A" %></p>
+            <% if (session.step4?.address_line2) { %>
+              <p class="mb-1"><%= session.step4?.address_line2 || "" %></p>
+            <% } %>
+            <p class="mb-0"><%= session.step4?.city || "N/A" %>, <%= session.step4?.state || "N/A" %> <%= session.step4?.zipcode || "N/A" %></p>
+          </div>
+
+          <!-- PAYMENT SUMMARY -->
+          <% if (typeof paymentSummary !== 'undefined') { %>
+            <div class="card bg-light border-primary border-2 shadow-sm">
+              <div class="card-body">
+                <h4 class="text-primary fw-bold mb-3"><i class="bi bi-credit-card me-2"></i>Payment Summary</h4>
+                <div class="d-flex justify-content-between mb-2">
+                  <span>Base Price:</span>
+                  <span class="fw-semibold">$<%= paymentSummary.basePrice.toFixed(2) %></span>
+                </div>
+                <% if (paymentSummary.extrasTotal > 0) { %>
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Extras:</span>
+                    <span class="fw-semibold">$<%= paymentSummary.extrasTotal.toFixed(2) %></span>
+                  </div>
+                <% } %>
+                <% if (paymentSummary.discount > 0) { %>
+                  <div class="d-flex justify-content-between mb-2 text-success">
+                    <span><strong>Discount (<%= paymentSummary.discountPercent %>%):</strong></span>
+                    <span class="fw-bold">-$<%= paymentSummary.discount.toFixed(2) %></span>
+                  </div>
+                <% } %>
+                <div class="d-flex justify-content-between mt-3 pt-3 border-top border-primary border-2">
+                  <span class="h5 fw-bold text-primary mb-0">Total Paid:</span>
+                  <span class="h5 fw-bold text-primary mb-0">$<%= paymentSummary.total.toFixed(2) %></span>
+                </div>
+                <p class="text-success mt-2 mb-0"><strong>Payment Status:</strong> Paid</p>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Return Home Button -->
+      <div class="text-center mt-5">
+        <a href="/" class="btn btn-primary btn-lg px-5">
+          <i class="bi bi-house me-2"></i>Return to Homepage
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+

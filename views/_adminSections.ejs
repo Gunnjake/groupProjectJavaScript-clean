@@ -1,0 +1,1301 @@
+<!-- EDIT DATE/TIME MODAL - Bootstrap -->
+<div id="editModal" class="modal fade" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="editModalLabel"><i class="bi bi-calendar-check me-2"></i>Edit Appointment Date & Time</h5>
+        <button type="button" class="btn-close btn-close-white" onclick="closeEditModal()" aria-label="Close"></button>
+      </div>
+      <form action="/admin/booking/update-datetime" method="POST">
+        <div class="modal-body">
+          <input type="hidden" id="editBookingId" name="booking_id" value="">
+          
+          <div class="mb-3">
+            <label for="editDate" class="form-label">Service Date</label>
+            <input type="date" class="form-control" id="editDate" name="requested_date" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="editTime" class="form-label">Service Time</label>
+            <select class="form-select" id="editTime" name="requested_time" required>
+              <option value="">Select a time...</option>
+              <option value="9:00 AM">9:00 AM</option>
+              <option value="10:00 AM">10:00 AM</option>
+              <option value="11:00 AM">11:00 AM</option>
+              <option value="12:00 PM">12:00 PM</option>
+              <option value="1:00 PM">1:00 PM</option>
+              <option value="2:00 PM">2:00 PM</option>
+              <option value="3:00 PM">3:00 PM</option>
+              <option value="4:00 PM">4:00 PM</option>
+              <option value="5:00 PM">5:00 PM</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Date & Time</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<script>
+function showEditModal(bookingId, currentDate, currentTime) {
+  document.getElementById('editBookingId').value = bookingId;
+  document.getElementById('editDate').value = currentDate || '';
+  document.getElementById('editTime').value = currentTime || '';
+  const modal = new bootstrap.Modal(document.getElementById('editModal'));
+  modal.show();
+}
+
+function closeEditModal() {
+  const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+  if (modal) modal.hide();
+}
+
+function showDeleteModal(bookingId, customerName) {
+  const deleteBookingIdEl = document.getElementById('deleteBookingId');
+  const deleteCustomerNameEl = document.getElementById('deleteCustomerName');
+  const deleteConfirmCheckboxEl = document.getElementById('deleteConfirmCheckbox');
+  const deleteConfirmBtnEl = document.getElementById('deleteConfirmBtn');
+  
+  if (deleteBookingIdEl) deleteBookingIdEl.value = bookingId;
+  if (deleteCustomerNameEl) deleteCustomerNameEl.textContent = customerName || '';
+  if (deleteConfirmCheckboxEl) deleteConfirmCheckboxEl.checked = false;
+  if (deleteConfirmBtnEl) deleteConfirmBtnEl.disabled = true;
+  
+  const modalElement = document.getElementById('deleteModal');
+  if (modalElement) {
+    // Hide any existing modal instance first
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+      existingModal.hide();
+    }
+    
+    // Create new modal instance and show
+    const modal = new bootstrap.Modal(modalElement, {
+      backdrop: true,
+      keyboard: true,
+      focus: true
+    });
+    modal.show();
+    
+    // Add event listener to reset form when modal is hidden
+    modalElement.addEventListener('hidden.bs.modal', function() {
+      if (deleteConfirmCheckboxEl) deleteConfirmCheckboxEl.checked = false;
+      if (deleteConfirmBtnEl) deleteConfirmBtnEl.disabled = true;
+    }, { once: true });
+  }
+}
+
+function closeDeleteModal() {
+  const modalElement = document.getElementById('deleteModal');
+  if (modalElement) {
+    // Get existing modal instance
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    
+    if (modal) {
+      // Use Bootstrap's hide method
+      modal.hide();
+      
+      // Ensure backdrop is removed after hide animation
+      modalElement.addEventListener('hidden.bs.modal', function cleanup() {
+        // Remove any remaining backdrop
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(b => b.remove());
+        
+        // Remove modal-open class from body
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Remove this event listener
+        modalElement.removeEventListener('hidden.bs.modal', cleanup);
+      }, { once: true });
+    } else {
+      // Manual cleanup if no Bootstrap instance
+      modalElement.classList.remove('show');
+      modalElement.setAttribute('aria-hidden', 'true');
+      modalElement.style.display = 'none';
+      modalElement.removeAttribute('aria-modal');
+      
+      // Remove all backdrops
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      backdrops.forEach(b => b.remove());
+      
+      // Clean up body
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+    
+    // Reset form state
+    const checkbox = document.getElementById('deleteConfirmCheckbox');
+    const button = document.getElementById('deleteConfirmBtn');
+    if (checkbox) checkbox.checked = false;
+    if (button) button.disabled = true;
+  }
+}
+
+function toggleDeleteButton() {
+  const checkbox = document.getElementById('deleteConfirmCheckbox');
+  const button = document.getElementById('deleteConfirmBtn');
+  button.disabled = !checkbox.checked;
+}
+</script>
+
+<!-- DELETE CONFIRMATION MODAL - Bootstrap -->
+<div id="deleteModal" class="modal fade" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle me-2"></i>Delete Booking</h5>
+        <button type="button" class="btn-close btn-close-white" onclick="closeDeleteModal()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-4">
+          Are you sure you want to delete the booking for <strong id="deleteCustomerName"></strong>?
+        </p>
+        <div class="alert alert-danger">
+          <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Warning:</h6>
+          <p class="mb-2">This will permanently delete all booking data including:</p>
+          <ul class="mb-2">
+            <li>Booking record</li>
+            <li>Payment information</li>
+            <li>All analytics data for this booking</li>
+            <li>Associated add-on services</li>
+          </ul>
+          <p class="mb-0 fw-bold">This action cannot be undone!</p>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="deleteConfirmCheckbox" onchange="toggleDeleteButton()">
+          <label class="form-check-label fw-semibold" for="deleteConfirmCheckbox">
+            I understand this will permanently delete all data
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <form action="/admin/booking/delete" method="POST" class="d-inline" id="deleteBookingForm">
+          <input type="hidden" id="deleteBookingId" name="booking_id" value="">
+          <button type="submit" id="deleteConfirmBtn" class="btn btn-danger" disabled>
+            Delete Booking
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVE SECTION -->
+<% if (section === 'active') { %>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 fw-bold text-primary"><i class="bi bi-clock-history me-2"></i>Active Appointments</h2>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <% if (activeAppointments.length === 0) { %>
+    <div class="card shadow-sm border-0 text-center py-5">
+      <div class="card-body">
+        <i class="bi bi-inbox display-1 text-muted mb-3"></i>
+        <p class="text-muted fs-5 mb-0">No active appointments</p>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="row g-4">
+    <% activeAppointments.forEach(a => { %>
+        <div class="col-12">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+          <div>
+                <h5 class="card-title mb-1 fw-bold"><%= a.first_name %> <%= a.last_name %></h5>
+                <p class="text-muted small mb-1">
+                  <% if (a.requested_date) { %>
+                    <i class="bi bi-calendar-event me-1"></i><%= new Date(a.requested_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+                    <% if (a.requested_time) { %> at <i class="bi bi-clock me-1"></i><%= a.requested_time %><% } %>
+                  <% } else { %>
+                    Date TBD
+                  <% } %>
+                </p>
+                <p class="text-muted small mb-0">
+                  <i class="bi bi-envelope me-1"></i><%= a.email %> | <i class="bi bi-telephone me-1"></i><%= a.phone %>
+                </p>
+          </div>
+              <div class="d-flex gap-2">
+                <button 
+                  onclick='showEditModal(<%= a.booking_id %>, "<%= a.requested_date || '' %>", "<%= a.requested_time || '' %>")'
+                  class="btn btn-primary"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editModal"
+                >
+                  <i class="bi bi-pencil me-1"></i>Edit
+                </button>
+                <form action="/admin/mark-complete/<%= a.booking_id %>" method="POST" class="d-inline">
+                  <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle me-1"></i>Complete
+            </button>
+          </form>
+                <button 
+                  onclick='showDeleteModal(<%= a.booking_id %>, "<%= a.first_name %> <%= a.last_name %>")'
+                  class="btn btn-danger"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteModal"
+                >
+                  <i class="bi bi-trash me-1"></i>Delete
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <p class="mb-2"><strong><i class="bi bi-hash me-1"></i>Booking ID:</strong> #<%= a.booking_id %></p>
+                  <p class="mb-2"><strong><i class="bi bi-house-door me-1"></i>Bedrooms:</strong> <%= a.bedrooms %></p>
+                  <p class="mb-2"><strong><i class="bi bi-broom me-1"></i>Cleaning Type:</strong> <%= a.cleaning_type %></p>
+                  <p class="mb-2"><strong><i class="bi bi-arrow-repeat me-1"></i>Frequency:</strong> <%= a.frequency || 'One-Time' %></p>
+        </div>
+                <div class="col-md-6">
+                  <p class="mb-2"><strong><i class="bi bi-geo-alt me-1"></i>Address:</strong> <%= a.address_line1 %><% if (a.address_line2) { %>, <%= a.address_line2 %><% } %>, <%= a.city %>, <%= a.state %> <%= a.zipcode %></p>
+                  <p class="mb-2"><strong><i class="bi bi-cash-stack me-1"></i>Total:</strong> $<%= parseFloat(a.total_due || 0).toFixed(2) %></p>
+                  <% if (a.payment_status) { %>
+                    <p class="mb-2">
+                      <strong>Payment Status:</strong> 
+                      <% if (a.payment_status === 'paid') { %>
+                        <span class="badge bg-success">Paid</span>
+                      <% } else if (a.payment_status === 'unpaid') { %>
+                        <span class="badge bg-danger">Unpaid</span>
+                      <% } else { %>
+                        <span class="badge bg-danger">Unpaid</span>
+                      <% } %>
+                    </p>
+                  <% } %>
+                  <% if (a.status) { %>
+                    <p class="mb-2"><strong>Status:</strong> <span class="badge bg-info"><%= a.status %></span></p>
+                  <% } %>
+                  <p class="mb-2"><strong><i class="bi bi-plus-circle me-1"></i>Extras:</strong>
+                    <% if (!a.extras || a.extras.length === 0) { %>
+                      <span class="text-muted">None</span>
+                    <% } else { %>
+                      <%= a.extras.map(e => e.name).join(", ") %>
+                    <% } %>
+                  </p>
+                </div>
+              </div>
+              <% if (a && a.comments) { %>
+                <div class="mt-3 pt-3 border-top">
+                  <p class="mb-0"><strong><i class="bi bi-chat-left-text me-1"></i>Comments:</strong> <%= a.comments %></p>
+                </div>
+              <% } %>
+            </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+  <% } %>
+<% } %>
+
+
+<!-- COMPLETED SECTION -->
+<% if (section === 'completed') { %>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 fw-bold text-primary"><i class="bi bi-check-circle me-2"></i>Completed Appointments</h2>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <% if (completedAppointments.length === 0) { %>
+    <div class="card shadow-sm border-0 text-center py-5">
+      <div class="card-body">
+        <i class="bi bi-check-circle display-1 text-muted mb-3"></i>
+        <p class="text-muted fs-5 mb-0">No completed appointments</p>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="row g-4">
+    <% completedAppointments.forEach(a => { %>
+        <div class="col-12">
+          <div class="card shadow-sm border-0 h-100 border-start border-success border-4">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+              <div>
+                <h5 class="card-title mb-1 fw-bold"><%= a.first_name %> <%= a.last_name %></h5>
+                <p class="text-muted small mb-1">
+                  <% if (a.requested_date) { %>
+                    <i class="bi bi-calendar-event me-1"></i><%= new Date(a.requested_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+                    <% if (a.requested_time) { %> at <i class="bi bi-clock me-1"></i><%= a.requested_time %><% } %>
+                  <% } else { %>
+                    Date TBD
+                  <% } %>
+                </p>
+                <p class="text-muted small mb-0">
+                  <i class="bi bi-envelope me-1"></i><%= a.email %> | <i class="bi bi-telephone me-1"></i><%= a.phone %>
+                </p>
+              </div>
+              <div class="d-flex gap-2 align-items-center">
+                <span class="badge bg-success fs-6">Completed</span>
+                <button 
+                  onclick='showDeleteModal(<%= a.booking_id %>, "<%= a.first_name %> <%= a.last_name %>")'
+                  class="btn btn-danger"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteModal"
+                >
+                  <i class="bi bi-trash me-1"></i>Delete
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <p class="mb-2"><strong><i class="bi bi-hash me-1"></i>Booking ID:</strong> #<%= a.booking_id %></p>
+                  <p class="mb-2"><strong><i class="bi bi-house-door me-1"></i>Bedrooms:</strong> <%= a.bedrooms %></p>
+                  <p class="mb-2"><strong><i class="bi bi-broom me-1"></i>Cleaning Type:</strong> <%= a.cleaning_type %></p>
+                  <p class="mb-2"><strong><i class="bi bi-arrow-repeat me-1"></i>Frequency:</strong> <%= a.frequency || 'One-Time' %></p>
+                </div>
+                <div class="col-md-6">
+                  <p class="mb-2"><strong><i class="bi bi-geo-alt me-1"></i>Address:</strong> <%= a.address_line1 %></p>
+                  <p class="mb-2"><strong><i class="bi bi-cash-stack me-1"></i>Total:</strong> $<%= parseFloat(a.total_due || 0).toFixed(2) %></p>
+                  <% if (a.payment_status) { %>
+                    <p class="mb-2">
+                      <strong>Payment Status:</strong> 
+                      <% if (a.payment_status === 'paid') { %>
+                        <span class="badge bg-success">Paid</span>
+                      <% } else if (a.payment_status === 'unpaid') { %>
+                        <span class="badge bg-danger">Unpaid</span>
+                      <% } else { %>
+                        <span class="badge bg-danger">Unpaid</span>
+                      <% } %>
+                    </p>
+                  <% } %>
+                  <p class="mb-2"><strong><i class="bi bi-plus-circle me-1"></i>Extras:</strong>
+                    <% if (!a.extras || a.extras.length === 0) { %>
+                      <span class="text-muted">None</span>
+                    <% } else { %>
+                      <%= a.extras.map(e => e.name).join(", ") %>
+                    <% } %>
+                  </p>
+                </div>
+              </div>
+              <% if (a && a.comments) { %>
+                <div class="mt-3 pt-3 border-top">
+                  <p class="mb-0"><strong><i class="bi bi-chat-left-text me-1"></i>Comments:</strong> <%= a.comments %></p>
+                </div>
+              <% } %>
+            </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+  <% } %>
+<% } %>
+
+
+<!-- ANALYTICS SECTION -->
+<% if (section === 'analytics') { %>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 fw-bold text-primary"><i class="bi bi-graph-up me-2"></i>Analytics Overview</h2>
+    </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 text-center h-100">
+        <div class="card-body">
+          <h4 class="text-muted small mb-2">Total Customers</h4>
+          <p class="display-4 fw-bold text-primary mb-0"><%= analytics.totalCustomers %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 text-center h-100">
+        <div class="card-body">
+          <h4 class="text-muted small mb-2">Total Revenue</h4>
+          <p class="display-4 fw-bold text-success mb-0">$<%= parseFloat(analytics.totalRevenue || 0).toFixed(2) %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 text-center h-100">
+        <div class="card-body">
+          <h4 class="text-muted small mb-2">Appointments</h4>
+          <p class="display-4 fw-bold text-info mb-0"><%= analytics.totalAppointments %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom">
+          <h3 class="h5 fw-semibold mb-0"><i class="bi bi-house-door me-2"></i>Counts by Bedroom</h3>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <% if (analytics && analytics.bedroomCounts && Array.isArray(analytics.bedroomCounts)) { %>
+        <% analytics.bedroomCounts.forEach(row => { %>
+              <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                <span class="fw-medium"><%= row.bedrooms %> Bedroom</span>
+                <span class="badge bg-primary rounded-pill"><%= row.count %></span>
+          </li>
+        <% }) %>
+            <% } else { %>
+              <li class="list-group-item border-0 px-0 text-muted">No bedroom data available</li>
+            <% } %>
+      </ul>
+        </div>
+    </div>
+  </div>
+
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom">
+          <h3 class="h5 fw-semibold mb-0"><i class="bi bi-star me-2"></i>Extras Popularity</h3>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <% if (analytics.extraCounts && analytics.extraCounts.length > 0) { %>
+        <% analytics.extraCounts.forEach(row => { %>
+              <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                <span class="fw-medium"><%= row.extra %></span>
+                <span class="badge bg-primary rounded-pill"><%= row.count %></span>
+          </li>
+        <% }) %>
+            <% } else { %>
+              <li class="list-group-item border-0 px-0 text-muted">No extras data available</li>
+            <% } %>
+      </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<% } %>
+
+
+<!-- SERVICES SECTION -->
+<% if (section === 'services') { %>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 fw-bold text-primary"><i class="bi bi-gear me-2"></i>Service Management</h2>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link <%= (servicesTab || 'cleaning-types') === 'cleaning-types' ? 'active' : '' %>" 
+         href="/admin/services?tab=cleaning-types">
+        Cleaning Types
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link <%= servicesTab === 'bedrooms' ? 'active' : '' %>" 
+         href="/admin/services?tab=bedrooms">
+        House Size (Bedrooms)
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link <%= servicesTab === 'extras' ? 'active' : '' %>" 
+         href="/admin/services?tab=extras">
+        Extras
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link <%= servicesTab === 'frequency' ? 'active' : '' %>" 
+         href="/admin/services?tab=frequency">
+        Frequency
+      </a>
+    </li>
+  </ul>
+
+  <!-- CLEANING TYPES TAB -->
+  <% if ((servicesTab || 'cleaning-types') === 'cleaning-types') { %>
+    <div class="mb-4">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom">
+          <h3 class="h5 fw-semibold mb-0"><i class="bi bi-plus-circle me-2"></i>Add New Cleaning Type</h3>
+        </div>
+        <div class="card-body">
+          <form action="/admin/services/cleaning-type/add" method="POST" class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Cleaning Type Name</label>
+              <input type="text" name="name" placeholder="Cleaning Type Name" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" placeholder="Description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Price for 1 Bedroom</label>
+              <input type="number" name="price_1_bed" placeholder="Price for 1 Bedroom" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Price for 2 Bedrooms</label>
+              <input type="number" name="price_2_bed" placeholder="Price for 2 Bedrooms" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Price for 3 Bedrooms</label>
+              <input type="number" name="price_3_bed" placeholder="Price for 3 Bedrooms" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Price for 4 Bedrooms</label>
+              <input type="number" name="price_4_bed" placeholder="Price for 4 Bedrooms" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle me-2"></i>Add Cleaning Type</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <h3 class="h5 fw-semibold mb-3">Existing Cleaning Types</h3>
+      <div class="row g-4">
+        <% (cleaningTypes || []).forEach(ct => { %>
+          <div class="col-12">
+            <div class="card shadow-sm border-0">
+              <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h4 class="h6 fw-semibold mb-0">ID: <%= ct.cleaning_type_id %></h4>
+                <a href="/admin/services/cleaning-type/delete/<%= ct.cleaning_type_id %>" 
+                   onclick="return confirm('Are you sure you want to delete this cleaning type?')"
+                   class="btn btn-danger btn-sm">
+                  <i class="bi bi-trash me-1"></i>Delete
+                </a>
+              </div>
+              <div class="card-body">
+                <form action="/admin/services/cleaning-type/update/<%= ct.cleaning_type_id %>" method="POST" class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" value="<%= ct.name %>" placeholder="Name" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" placeholder="Description" class="form-control" rows="3"><%= ct.description || '' %></textarea>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">1 Bedroom Price</label>
+                    <input type="number" name="price_1_bed" value="<%= ct.price_1_bed || '' %>" class="form-control" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">2 Bedrooms Price</label>
+                    <input type="number" name="price_2_bed" value="<%= ct.price_2_bed || '' %>" class="form-control" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">3 Bedrooms Price</label>
+                    <input type="number" name="price_3_bed" value="<%= ct.price_3_bed || '' %>" class="form-control" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">4 Bedrooms Price</label>
+                    <input type="number" name="price_4_bed" value="<%= ct.price_4_bed || '' %>" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Update</button>
+                  </div>
+    </form>
+  </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- BEDROOMS TAB -->
+  <% if (servicesTab === 'bedrooms') { %>
+    <div class="mb-4">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom">
+          <h3 class="h5 fw-semibold mb-0"><i class="bi bi-plus-circle me-2"></i>Add New Bedroom Option</h3>
+        </div>
+        <div class="card-body">
+          <form action="/admin/services/bedroom/add" method="POST" class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Number of Bedrooms</label>
+              <input type="number" name="bedroom_count" placeholder="Number of Bedrooms" min="1" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Label</label>
+              <input type="text" name="label" placeholder="Label (e.g., '2 Bedrooms')" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Icon (emoji)</label>
+              <input type="text" name="icon" placeholder="Icon (emoji)" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Display Order</label>
+              <input type="number" name="display_order" placeholder="Display Order" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle me-2"></i>Add Bedroom Option</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <h3 class="h5 fw-semibold mb-3">Existing Bedroom Options</h3>
+      <div class="row g-4">
+        <% (bedroomOptions || []).forEach(bo => { %>
+          <div class="col-12">
+            <div class="card shadow-sm border-0">
+              <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h4 class="h6 fw-semibold mb-0"><%= bo.icon %> <%= bo.label %></h4>
+                <a href="/admin/services/bedroom/delete/<%= bo.bedroom_count %>" 
+                   onclick="return confirm('Are you sure you want to delete this bedroom option?')"
+                   class="btn btn-danger btn-sm">
+                  <i class="bi bi-trash me-1"></i>Delete
+                </a>
+              </div>
+              <div class="card-body">
+                <form action="/admin/services/bedroom/update/<%= bo.bedroom_count %>" method="POST" class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Label</label>
+                    <input type="text" name="label" value="<%= bo.label %>" placeholder="Label" class="form-control" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Icon</label>
+                    <input type="text" name="icon" value="<%= bo.icon %>" placeholder="Icon" class="form-control" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Display Order</label>
+                    <input type="number" name="display_order" value="<%= bo.display_order %>" placeholder="Display Order" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Update</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- EXTRAS TAB -->
+  <% if (servicesTab === 'extras') { %>
+    <div class="mb-4">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom">
+          <h3 class="h5 fw-semibold mb-0"><i class="bi bi-plus-circle me-2"></i>Add New Extra Service</h3>
+        </div>
+        <div class="card-body">
+          <form action="/admin/services/extra/add" method="POST" class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Extra Service Name</label>
+              <input type="text" name="name" placeholder="Extra Service Name" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Price (USD)</label>
+              <input type="number" name="price" placeholder="Price (USD)" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" placeholder="Description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle me-2"></i>Add Extra Service</button>
+            </div>
+          </form>
+        </div>
+        </div>
+
+      <h3 class="h5 fw-semibold mb-3">Existing Extra Services</h3>
+      <div class="row g-4">
+        <% (extras || []).forEach(ex => { %>
+          <div class="col-12">
+            <div class="card shadow-sm border-0">
+              <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h4 class="h6 fw-semibold mb-0">ID: <%= ex.add_on_id %></h4>
+                <a href="/admin/services/extra/delete/<%= ex.add_on_id %>" 
+                   onclick="return confirm('Are you sure you want to delete this extra service?')"
+                   class="btn btn-danger btn-sm">
+                  <i class="bi bi-trash me-1"></i>Delete
+                </a>
+              </div>
+              <div class="card-body">
+                <form action="/admin/services/extra/update/<%= ex.add_on_id %>" method="POST" class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" value="<%= ex.name %>" placeholder="Name" class="form-control" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Price</label>
+                    <input type="number" name="price" value="<%= ex.price %>" placeholder="Price" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" placeholder="Description" class="form-control" rows="3"><%= ex.description || '' %></textarea>
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Update</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- FREQUENCY TAB -->
+  <% if (servicesTab === 'frequency') { %>
+    <div class="mb-4">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom">
+          <h3 class="h5 fw-semibold mb-0"><i class="bi bi-plus-circle me-2"></i>Add New Frequency Option</h3>
+        </div>
+        <div class="card-body">
+          <form action="/admin/services/frequency/add" method="POST" class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Frequency Name</label>
+              <input type="text" name="name" placeholder="Frequency Name (e.g., 'Weekly')" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" placeholder="Description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Discount Percent (0-100)</label>
+              <input type="number" name="discount_percent" placeholder="Discount Percent (0-100)" min="0" max="100" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle me-2"></i>Add Frequency Option</button>
+            </div>
+        </form>
+        </div>
+      </div>
+
+      <h3 class="h5 fw-semibold mb-3">Existing Frequency Options</h3>
+      <div class="row g-4">
+        <% (frequencies || []).forEach(f => { %>
+          <div class="col-12">
+            <div class="card shadow-sm border-0">
+              <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h4 class="h6 fw-semibold mb-0">ID: <%= f.frequency_id %></h4>
+                <a href="/admin/services/frequency/delete/<%= f.frequency_id %>" 
+                   onclick="return confirm('Are you sure you want to delete this frequency option?')"
+                   class="btn btn-danger btn-sm">
+                  <i class="bi bi-trash me-1"></i>Delete
+                </a>
+              </div>
+              <div class="card-body">
+                <form action="/admin/services/frequency/update/<%= f.frequency_id %>" method="POST" class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" value="<%= f.name %>" placeholder="Name" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" placeholder="Description" class="form-control" rows="3"><%= f.description || '' %></textarea>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Discount Percent</label>
+                    <input type="number" name="discount_percent" value="<%= f.discount_percent || 0 %>" placeholder="Discount Percent" min="0" max="100" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Update</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+      </div>
+    <% }) %>
+  </div>
+    </div>
+  <% } %>
+
+<% } %>
+
+<!-- TESTIMONIALS TAB -->
+<% if (section === 'testimonials') { %>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 fw-bold text-primary"><i class="bi bi-chat-quote me-2"></i>Testimonials</h2>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom">
+      <h3 class="h5 fw-semibold mb-0"><i class="bi bi-plus-circle me-2"></i>Add New Testimonial</h3>
+    </div>
+    <div class="card-body">
+      <form action="/admin/testimonials/add" method="POST" class="row g-3">
+        <div class="col-12">
+          <label class="form-label">Customer Name</label>
+          <input type="text" name="name" placeholder="Customer Name" class="form-control" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Testimonial Quote</label>
+          <textarea name="quote" placeholder="Testimonial Quote" class="form-control" rows="4" required></textarea>
+        </div>
+        <div class="col-12">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="is_active" value="true" id="isActiveNew" checked>
+            <label class="form-check-label" for="isActiveNew">Active</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Display Order (lower = first)</label>
+          <input type="number" name="display_order" placeholder="Display Order" min="0" value="0" class="form-control">
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle me-2"></i>Add Testimonial</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <h3 class="h5 fw-semibold mb-3">Existing Testimonials</h3>
+
+  <% if (typeof testimonials === 'undefined' || testimonials.length === 0) { %>
+    <div class="card shadow-sm border-0 text-center py-5">
+      <div class="card-body">
+        <i class="bi bi-inbox display-1 text-muted mb-3"></i>
+        <p class="text-muted fs-5 mb-0">No testimonials added yet. Add one above to get started!</p>
+      </div>
+    </div>
+  <% } else { %>
+  <div class="row g-4">
+    <% testimonials.forEach(t => { %>
+      <div class="col-12">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="flex-grow-1">
+                <h4 class="h5 fw-semibold mb-2"><%= t.name %></h4>
+                <p class="text-muted mb-2 fst-italic">"<%= t.quote %>"</p>
+                <p class="text-muted small mb-0">ID: <%= t.testimonial_id %> | Active: <%= t.is_active ? 'Yes' : 'No' %> | Order: <%= t.display_order %></p>
+              </div>
+              <div class="d-flex gap-2 ms-4">
+                <button 
+                  onclick="showEditTestimonialModal(<%= t.testimonial_id %>, '<%= t.name.replace(/'/g, "\\'") %>', '<%= t.quote.replace(/'/g, "\\'") %>', <%= t.is_active %>, <%= t.display_order %>)"
+                  class="btn btn-primary btn-sm"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editTestimonialModal">
+                  <i class="bi bi-pencil me-1"></i>Edit
+                </button>
+                <a href="/admin/testimonials/delete/<%= t.testimonial_id %>" 
+                   onclick="return confirm('Are you sure you want to delete this testimonial?')"
+                   class="btn btn-danger btn-sm">
+                  <i class="bi bi-trash me-1"></i>Delete
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+  <% } %>
+
+  <!-- Edit Testimonial Modal - Bootstrap -->
+  <div id="editTestimonialModal" class="modal fade" tabindex="-1" aria-labelledby="editTestimonialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="editTestimonialModalLabel"><i class="bi bi-pencil me-2"></i>Edit Testimonial</h5>
+          <button type="button" class="btn-close btn-close-white" onclick="closeEditTestimonialModal()" aria-label="Close"></button>
+        </div>
+        <form action="/admin/testimonials/update" method="POST" id="editTestimonialForm">
+          <div class="modal-body">
+            <input type="hidden" name="testimonial_id" id="editTestimonialId">
+            <div class="mb-3">
+              <label class="form-label">Customer Name</label>
+              <input type="text" name="name" id="editTestimonialName" placeholder="Customer Name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Testimonial Quote</label>
+              <textarea name="quote" id="editTestimonialQuote" placeholder="Testimonial Quote" class="form-control" rows="4" required></textarea>
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_active" value="true" id="editTestimonialActive">
+                <label class="form-check-label" for="editTestimonialActive">Active</label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Display Order (lower = first)</label>
+              <input type="number" name="display_order" id="editTestimonialOrder" placeholder="Display Order" min="0" value="0" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeEditTestimonialModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update Testimonial</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function showEditTestimonialModal(id, name, quote, isActive, displayOrder) {
+    document.getElementById('editTestimonialId').value = id;
+    document.getElementById('editTestimonialName').value = name;
+    document.getElementById('editTestimonialQuote').value = quote;
+    document.getElementById('editTestimonialActive').checked = isActive;
+    document.getElementById('editTestimonialOrder').value = displayOrder;
+    document.getElementById('editTestimonialForm').action = '/admin/testimonials/update/' + id;
+    const modal = new bootstrap.Modal(document.getElementById('editTestimonialModal'));
+    modal.show();
+  }
+  
+  function closeEditTestimonialModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('editTestimonialModal'));
+    if (modal) modal.hide();
+  }
+  </script>
+<% } %>
+
+<!-- DATES & TIMES SECTION -->
+<% if (section === 'dates-times') { %>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 fw-bold text-primary"><i class="bi bi-calendar-event me-2"></i>Date & Time Management</h2>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% } %>
+
+  <div class="mb-4">
+    <!-- Calendar View for Selecting Multiple Dates -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white border-bottom">
+        <h3 class="h5 fw-semibold mb-0"><i class="bi bi-calendar3 me-2"></i>Select Multiple Dates (Calendar View)</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Month & Year</label>
+          <div class="d-flex gap-2">
+            <input type="month" id="calendarMonth" class="form-control" 
+                   value="<%= new Date().toISOString().slice(0, 7) %>">
+            <button type="button" onclick="renderCalendar()" class="btn btn-primary">
+              <i class="bi bi-arrow-clockwise me-1"></i>Load Calendar
+            </button>
+          </div>
+        </div>
+        <div id="calendarGrid" class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
+          <!-- Calendar will be rendered here by JavaScript -->
+        </div>
+        <div class="mb-3">
+          <p class="text-muted small mb-2">Selected Dates: <span id="selectedDatesCount" class="fw-bold">0</span></p>
+          <div id="selectedDatesList" class="d-flex flex-wrap gap-2 mb-3"></div>
+        </div>
+        <form action="/admin/services/dates/bulk-add" method="POST" id="bulkDateForm" class="row g-3">
+          <input type="hidden" name="selected_dates" id="selectedDatesInput">
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_available" value="true" id="isAvailableDates" checked>
+              <label class="form-check-label" for="isAvailableDates">Available</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Max Bookings per Date</label>
+            <input type="number" name="max_bookings" placeholder="Max Bookings per Date (default: 10)" min="1" value="10" class="form-control">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle me-2"></i>Add Selected Dates</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Time Slots to Selected Dates -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white border-bottom">
+        <h3 class="h5 fw-semibold mb-0"><i class="bi bi-clock me-2"></i>Add Time Slots to Selected Dates</h3>
+      </div>
+      <div class="card-body">
+        <form action="/admin/services/time-slot/bulk-add" method="POST" class="row g-3">
+          <div class="col-12">
+            <div id="timeSlotDatesList" class="d-flex flex-wrap gap-2 p-3 bg-light rounded mb-3">
+              <p class="text-muted small mb-0">Select dates from the calendar above first</p>
+            </div>
+          </div>
+          <input type="hidden" name="selected_date_ids" id="timeSlotDateIds">
+          <div class="col-md-6">
+            <label class="form-label">Time Slot</label>
+            <input type="text" name="time_slot" placeholder="Time (e.g., '9:00 AM')" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Max Bookings</label>
+            <input type="number" name="max_bookings" placeholder="Max Bookings (default: 2)" min="1" value="2" class="form-control">
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_available" value="true" id="isAvailableTimeSlot" checked>
+              <label class="form-check-label" for="isAvailableTimeSlot">Available</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add Time Slot to Selected Dates</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <h3 class="h5 fw-semibold mb-3">Available Dates & Time Slots</h3>
+    
+    <% if (!datesWithTimes || datesWithTimes.length === 0) { %>
+      <div class="card shadow-sm border-0 text-center py-5">
+        <div class="card-body">
+          <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
+          <p class="text-muted fs-5 mb-0">No available dates added yet. Use the calendar above to add dates and time slots.</p>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="row g-4">
+        <% datesWithTimes.forEach(dateData => { %>
+          <div class="col-12">
+            <div class="card shadow-sm border-0">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+                      <h4 class="h6 fw-semibold mb-0">
+                        <%= new Date(dateData.available_date).toLocaleDateString('en-US', { 
+                          weekday: 'short',
+                          month: 'short', 
+                          day: 'numeric',
+                          year: 'numeric'
+                        }) %>
+                      </h4>
+                      <span class="badge <%= dateData.is_available ? 'bg-success' : 'bg-danger' %>">
+                        <%= dateData.is_available ? 'Available' : 'Unavailable' %>
+                      </span>
+                      <span class="text-muted small">Max: <%= dateData.max_bookings || 10 %></span>
+                    </div>
+                    
+                    <!-- Time Slots Display -->
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                      <% if (dateData.time_slots && dateData.time_slots.length > 0) { %>
+                        <% dateData.time_slots.forEach(timeSlot => { %>
+                          <span class="badge bg-secondary d-inline-flex align-items-center gap-1">
+                            <%= timeSlot.time_slot %>
+                            <% if (!timeSlot.is_available) { %>
+                              <i class="bi bi-x-circle text-danger"></i>
+                            <% } %>
+                            <a href="/admin/services/time-slot/delete/<%= timeSlot.time_slot_id %>" 
+                               onclick="return confirm('Delete this time slot?')"
+                               class="text-white text-decoration-none ms-1">×</a>
+                          </span>
+                        <% }) %>
+                      <% } else { %>
+                        <span class="text-muted small fst-italic">No time slots</span>
+                      <% } %>
+                    </div>
+                  </div>
+                  
+                  <div class="d-flex gap-2 ms-4">
+                    <button onclick="selectDateForTimeSlot(<%= dateData.date_id %>, '<%= dateData.available_date %>')" 
+                            class="btn btn-primary btn-sm">
+                      <i class="bi bi-plus-circle me-1"></i>+ Time
+                    </button>
+                    <a href="/admin/services/date/delete/<%= dateData.date_id %>" 
+                       onclick="return confirm('Delete this date and all its time slots?')"
+                       class="btn btn-danger btn-sm">
+                      <i class="bi bi-trash me-1"></i>Delete
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+<% } %>
+
+<!-- Calendar JavaScript - Only load if on dates-times section -->
+<% if (section === 'dates-times') { %>
+<script>
+let selectedDates = [];
+let selectedDateIds = [];
+
+function renderCalendar() {
+  const monthInput = document.getElementById('calendarMonth');
+  if (!monthInput) return; // Exit if element doesn't exist
+  
+  const yearMonth = monthInput.value.split('-');
+  const year = parseInt(yearMonth[0]);
+  const month = parseInt(yearMonth[1]) - 1;
+  
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  
+  const grid = document.getElementById('calendarGrid');
+  if (!grid) return; // Exit if element doesn't exist
+  grid.innerHTML = '';
+  
+  // Day headers
+  const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  dayHeaders.forEach(day => {
+    const header = document.createElement('div');
+    header.className = 'fw-semibold text-center text-muted p-2';
+    header.textContent = day;
+    grid.appendChild(header);
+  });
+  
+  // Empty cells for days before month starts
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    grid.appendChild(empty);
+  }
+  
+  // Days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dateStr = date.toISOString().split('T')[0];
+    const isPast = date < today && date.toDateString() !== today.toDateString();
+    const isSelected = selectedDates.includes(dateStr);
+    
+    const dayCell = document.createElement('div');
+    let cellClass = 'p-2 text-center border rounded';
+    if (isPast) {
+      cellClass += ' bg-light text-muted';
+      dayCell.style.cursor = 'not-allowed';
+    } else if (isSelected) {
+      cellClass += ' bg-primary text-white fw-semibold';
+      dayCell.style.cursor = 'pointer';
+    } else {
+      cellClass += ' bg-white border-secondary';
+      dayCell.style.cursor = 'pointer';
+      dayCell.onmouseover = function() { this.classList.add('bg-primary', 'bg-opacity-10'); };
+      dayCell.onmouseout = function() { this.classList.remove('bg-primary', 'bg-opacity-10'); };
+    }
+    dayCell.className = cellClass;
+    dayCell.textContent = day;
+    
+    if (!isPast) {
+      dayCell.onclick = () => toggleDate(dateStr);
+    }
+    
+    grid.appendChild(dayCell);
+  }
+  
+  updateSelectedDatesDisplay();
+}
+
+function toggleDate(dateStr) {
+  const index = selectedDates.indexOf(dateStr);
+  if (index > -1) {
+    selectedDates.splice(index, 1);
+  } else {
+    selectedDates.push(dateStr);
+  }
+  selectedDates.sort();
+  renderCalendar();
+}
+
+function updateSelectedDatesDisplay() {
+  const countEl = document.getElementById('selectedDatesCount');
+  const listEl = document.getElementById('selectedDatesList');
+  const inputEl = document.getElementById('selectedDatesInput');
+  
+  if (countEl) countEl.textContent = selectedDates.length;
+  if (inputEl) inputEl.value = selectedDates.join(',');
+  
+  if (listEl) {
+    listEl.innerHTML = '';
+    selectedDates.forEach(dateStr => {
+      const date = new Date(dateStr);
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-primary d-inline-flex align-items-center gap-2 me-2 mb-2';
+      const dateStrFormatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      badge.innerHTML = dateStrFormatted + 
+        ' <button onclick="removeDate(\'' + dateStr + '\')" class="btn-close btn-close-white" style="font-size: 0.65rem;" aria-label="Remove"></button>';
+      listEl.appendChild(badge);
+    });
+  }
+}
+
+function removeDate(dateStr) {
+  selectedDates = selectedDates.filter(d => d !== dateStr);
+  renderCalendar();
+}
+
+function selectDateForTimeSlot(dateId, dateStr) {
+  if (!selectedDateIds.includes(dateId)) {
+    selectedDateIds.push(dateId);
+  }
+  
+  const listEl = document.getElementById('timeSlotDatesList');
+  const inputEl = document.getElementById('timeSlotDateIds');
+  
+  if (inputEl) inputEl.value = selectedDateIds.join(',');
+  
+  if (listEl) {
+    listEl.innerHTML = '<span class="badge bg-primary">' + dateStr + '</span>';
+  }
+}
+
+// Initialize calendar on page load - only if on dates-times section
+document.addEventListener('DOMContentLoaded', () => {
+  const monthInput = document.getElementById('calendarMonth');
+  if (monthInput) {
+    renderCalendar();
+  }
+});
+</script>
+<% } %>

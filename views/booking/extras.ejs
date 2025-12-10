@@ -1,0 +1,281 @@
+<!-- extras.ejs - Bootstrap 5 Styled -->
+
+<style>
+/* Professional Selection Cards */
+.selection-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: #ffffff;
+  padding: 2rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.selection-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.selection-card:hover {
+  border-color: #E5482E;
+  box-shadow: 0 8px 24px rgba(229, 72, 46, 0.12);
+  transform: translateY(-4px);
+  background: #ffffff;
+}
+
+.selection-card:hover::before {
+  background: #E5482E;
+}
+
+.selection-card.selected {
+  border-color: #E5482E;
+  background: linear-gradient(to bottom, #fff5f3 0%, #ffffff 100%);
+  box-shadow: 0 8px 24px rgba(229, 72, 46, 0.2);
+  transform: translateY(-2px);
+}
+
+.selection-card.selected::before {
+  background: #E5482E;
+}
+
+.card-icon {
+  font-size: 2.75rem;
+  margin-bottom: 0.75rem;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.card-icon.is-unchecked {
+  color: #adb5bd;
+}
+
+.card-icon.is-checked {
+  color: #E5482E;
+}
+
+.selection-card.selected .card-icon {
+  transform: scale(1.1);
+}
+
+.selection-card p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2F3C48;
+  margin: 0;
+}
+
+.selection-card.selected p {
+  color: #E5482E;
+}
+
+input[type="checkbox"] {
+  display: none;
+}
+
+/* Price badge in cards */
+.price-badge {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #E5482E;
+  margin-top: 0.5rem;
+}
+</style>
+
+<style>
+  /* Remove top padding from main for booking pages */
+  main.py-5 {
+    padding-top: 0 !important;
+  }
+</style>
+
+<div class="container pt-2 pb-5">
+  <!-- Breadcrumbs and Price Summary Row -->
+  <div class="row align-items-center mb-3">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb" class="mb-0">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a href="/cleaningType">1. Cleaning Details</a></li>
+          <li class="breadcrumb-item active">2. Extras</li>
+          <li class="breadcrumb-item text-muted">3. Frequency</li>
+          <li class="breadcrumb-item text-muted">4. Your Details</li>
+          <li class="breadcrumb-item text-muted">5. Review</li>
+          <li class="breadcrumb-item text-muted">6. Payment</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <!-- Price Summary - Orange Box (Dynamic) -->
+      <span id="topPriceBadge" class="badge" style="background-color: #E5482E; color: white; font-size: 1.1rem; padding: 0.5rem 1rem; display: none;">
+        +$0.00
+      </span>
+    </div>
+  </div>
+
+  <!-- Page Header -->
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold text-dark mb-3">Add-On Services</h1>
+    <p class="lead text-muted">Select any additional services you'd like included</p>
+  </div>
+
+  <form action="/frequency" method="POST" id="extrasForm" class="booking-step-form">
+
+    <% 
+      // Use addOns from database, or fallback if not provided
+      const extras = typeof addOns !== 'undefined' && addOns.length > 0
+        ? addOns
+        : [
+            { value: "inside_fridge", label: "Inside Fridge", icon: "❄️", price: 20 },
+            { value: "inside_oven", label: "Inside Oven", icon: "🔥", price: 25 },
+            { value: "windows", label: "Interior Windows", icon: "🪟", price: 30 },
+            { value: "dish_washing", label: "Dish Washing", icon: "🍽️", price: 15 },
+            { value: "laundry", label: "Load of Laundry", icon: "🧺", price: 25 }
+          ]; 
+    %>
+
+    <!-- Extras Selection -->
+    <div class="row g-4 justify-content-center mb-5">
+      <% extras.forEach(ex => { %>
+        <div class="col-6 col-md-4 col-lg-3">
+          <label class="selection-card w-100" for="ex_<%= ex.add_on_id || ex.value %>">
+            <input
+              type="checkbox"
+              id="ex_<%= ex.add_on_id || ex.value %>"
+              name="extras"
+              value="<%= ex.add_on_id || ex.value %>"
+            >
+            <span class="card-icon" data-icon="<%= ex.value %>">
+              <% if (ex.value && ex.value.toLowerCase().includes('fridge')) { %>
+                <i class="bi bi-snow"></i>
+              <% } else if (ex.value && ex.value.toLowerCase().includes('oven')) { %>
+                <i class="bi bi-fire"></i>
+              <% } else if (ex.value && ex.value.toLowerCase().includes('window')) { %>
+                <i class="bi bi-window"></i>
+              <% } else if (ex.value && ex.value.toLowerCase().includes('dish')) { %>
+                <i class="bi bi-cup-straw"></i>
+              <% } else if (ex.value && ex.value.toLowerCase().includes('laundry')) { %>
+                <i class="bi bi-basket-fill"></i>
+              <% } else { %>
+                <i class="bi bi-plus-circle"></i>
+              <% } %>
+            </span>
+            <p class="mt-2 mb-1 fw-semibold"><%= ex.label || ex.name %></p>
+            <% if (ex.price) { %>
+              <p class="price-badge">+$<%= parseFloat(ex.price).toFixed(2) %></p>
+            <% } %>
+          </label>
+        </div>
+      <% }) %>
+    </div>
+
+    <!-- Initial price data for JavaScript -->
+    <script>
+      const extrasPriceData = <%- JSON.stringify(typeof addOns !== 'undefined' ? addOns.map(e => ({
+        id: e.value || e.add_on_id,
+        label: e.label || e.name,
+        price: parseFloat(e.price) || 0
+      })) : []) %>;
+      
+      const initialExtrasPrice = <%- JSON.stringify(typeof priceInfo !== 'undefined' ? {
+        basePrice: priceInfo.basePrice,
+        extrasTotal: priceInfo.extrasTotal,
+        subtotal: priceInfo.subtotal
+      } : { basePrice: 0, extrasTotal: 0, subtotal: 0 }) %>;
+    </script>
+
+    <!-- Submit Button -->
+    <div class="text-center mt-5 pt-4 border-top">
+      <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-semibold shadow-sm">
+        Continue to Date & Frequency <i class="bi bi-arrow-right ms-2"></i>
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+// Card checkbox behavior with dynamic price updates
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("extrasForm");
+  const inputs = form.querySelectorAll("input[type='checkbox']");
+  const topPriceBadge = document.getElementById('topPriceBadge');
+  
+  let currentExtrasPrice = { ...initialExtrasPrice };
+  
+  // Function to update top price badge
+  function updateTopPrice() {
+    if (!topPriceBadge) return;
+    
+    const checkedExtras = Array.from(inputs)
+      .filter(input => input.checked)
+      .map(input => input.value);
+    
+    let extrasTotal = 0;
+    checkedExtras.forEach(extraId => {
+      const extra = extrasPriceData.find(e => e.id === extraId || e.id === parseInt(extraId));
+      if (extra && extra.price) {
+        extrasTotal += parseFloat(extra.price) || 0;
+      }
+    });
+    
+    currentExtrasPrice.extrasTotal = extrasTotal;
+    currentExtrasPrice.subtotal = currentExtrasPrice.basePrice + extrasTotal;
+    
+    if (currentExtrasPrice.subtotal > 0) {
+      topPriceBadge.textContent = `+$${currentExtrasPrice.subtotal.toFixed(2)}`;
+      topPriceBadge.style.display = 'inline-block';
+    } else {
+      topPriceBadge.style.display = 'none';
+    }
+  }
+  
+  // Initialize top price badge
+  if (initialExtrasPrice.subtotal > 0) {
+    if (topPriceBadge) {
+      topPriceBadge.textContent = `+$${initialExtrasPrice.subtotal.toFixed(2)}`;
+      topPriceBadge.style.display = 'inline-block';
+    }
+  }
+  
+  function updatePrice() {
+    updateTopPrice();
+  }
+
+  inputs.forEach(input => {
+    const card = input.closest(".selection-card");
+    const icon = card.querySelector("[data-icon]");
+
+    icon.classList.add("is-unchecked");
+
+    card.addEventListener("click", () => {
+      input.checked = !input.checked;
+
+      if (input.checked) {
+        card.classList.add("selected");
+        icon.classList.add("is-checked");
+        icon.classList.remove("is-unchecked");
+      } else {
+        card.classList.remove("selected");
+        icon.classList.remove("is-checked");
+        icon.classList.add("is-unchecked");
+      }
+      
+      // Update price when extra is selected/deselected
+      updatePrice();
+    });
+  });
+});
+</script>

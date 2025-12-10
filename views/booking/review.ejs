@@ -1,0 +1,187 @@
+<div class="container py-5">
+  <!-- Progress Steps -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/cleaningType">1. Cleaning Details</a></li>
+      <li class="breadcrumb-item"><a href="/extra">2. Extras</a></li>
+      <li class="breadcrumb-item"><a href="/frequency">3. Frequency</a></li>
+      <li class="breadcrumb-item"><a href="/yourdetails">4. Your Details</a></li>
+      <li class="breadcrumb-item active">5. Review</li>
+      <li class="breadcrumb-item text-muted">6. Payment</li>
+    </ol>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="text-center mb-5">
+    <h1 class="display-5 fw-bold text-primary mb-3">Review Your Booking</h1>
+    <p class="lead text-muted">Confirm your selections before proceeding to payment</p>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-lg border-0">
+        <div class="card-body p-5">
+
+          <!-- CLEANING DETAILS -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-house-door me-2"></i>Cleaning Details</h4>
+            <div class="row">
+              <div class="col-md-6 mb-2">
+                <strong>Bedrooms:</strong> <%= session.step1?.bedrooms || "Not selected" %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Cleaning Type:</strong> <%= session.step1?.cleaningType || "Not selected" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- EXTRAS -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-plus-circle me-2"></i>Extras</h4>
+            <% 
+              const extrasList = typeof addOnNames !== 'undefined' && Array.isArray(addOnNames) && addOnNames.length > 0
+                ? addOnNames
+                : [];
+            %>
+            <% if (extrasList.length > 0) { %>
+              <ul class="list-unstyled mb-0">
+                <% extrasList.forEach(addOn => { %>
+                  <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i><%= addOn.name %><% if (addOn.price) { %> - $<%= addOn.price %><% } %></li>
+                <% }) %>
+              </ul>
+            <% } else { %>
+              <p class="text-muted mb-0">No extras selected.</p>
+            <% } %>
+          </div>
+
+          <!-- FREQUENCY & DATE -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-calendar-check me-2"></i>Schedule</h4>
+            <div class="row">
+              <div class="col-md-6 mb-2">
+                <strong>Frequency:</strong> <%= session.step3?.frequency || "Not selected" %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Date:</strong> <%= session.step3?.requested_date ? new Date(session.step3.requested_date).toLocaleDateString() : "Not selected" %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Time:</strong> <%= session.step3?.requested_time || "Not selected" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- YOUR DETAILS -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-person me-2"></i>Contact Information</h4>
+            <div class="row">
+              <div class="col-md-6 mb-2">
+                <strong>Name:</strong> <%= session.step4?.first_name || "N/A" %> <%= session.step4?.last_name || "" %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Email:</strong> <%= session.step4?.email || "N/A" %>
+              </div>
+              <div class="col-md-6 mb-2">
+                <strong>Phone:</strong> <%= session.step4?.phone || "N/A" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADDRESS -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>Service Address</h4>
+            <p class="mb-1"><%= session.step4?.address_line1 || "N/A" %></p>
+            <% if (session.step4?.address_line2) { %>
+              <p class="mb-1"><%= session.step4?.address_line2 || "" %></p>
+            <% } %>
+            <p class="mb-0"><%= session.step4?.city || "N/A" %>, <%= session.step4?.state || "N/A" %> <%= session.step4?.zipcode || "N/A" %></p>
+          </div>
+
+          <!-- COMMENTS -->
+          <div class="mb-4 pb-4 border-bottom">
+            <h4 class="text-primary fw-bold mb-3"><i class="bi bi-chat-left-text me-2"></i>Additional Comments</h4>
+            <form action="/review" method="post" id="commentsForm">
+              <div class="mb-3">
+                <label for="comments" class="form-label">Special Instructions or Comments (Optional)</label>
+                <textarea 
+                  class="form-control" 
+                  id="comments" 
+                  name="comments" 
+                  rows="4" 
+                  placeholder="Any special instructions, areas to focus on, or comments about your cleaning needs..."
+                ><%= session.step4?.comments || '' %></textarea>
+                <small class="form-text text-muted">Let us know if you have any specific requests or instructions for the cleaning team.</small>
+              </div>
+            </form>
+          </div>
+
+          <!-- PRICE BREAKDOWN -->
+          <% if (typeof priceBreakdown !== 'undefined') { %>
+            <div class="card bg-light border-primary border-2 shadow-sm mt-4">
+              <div class="card-body">
+                <h4 class="text-primary fw-bold mb-4"><i class="bi bi-receipt me-2"></i>Price Breakdown</h4>
+                
+                <div class="d-flex justify-content-between mb-2">
+                  <span>Base Cleaning Price:</span>
+                  <span class="fw-semibold">$<%= priceBreakdown.basePrice.toFixed(2) %></span>
+                </div>
+                
+                <% if (priceBreakdown.extrasTotal > 0) { %>
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Extras:</span>
+                    <span class="fw-semibold">+$<%= priceBreakdown.extrasTotal.toFixed(2) %></span>
+                  </div>
+                <% } %>
+                
+                <div class="d-flex justify-content-between mb-2 pt-2 border-top">
+                  <span><strong>Subtotal:</strong></span>
+                  <span class="fw-bold">$<%= (priceBreakdown.basePrice + priceBreakdown.extrasTotal).toFixed(2) %></span>
+                </div>
+                
+                <% if (priceBreakdown.discount > 0) { %>
+                  <div class="d-flex justify-content-between mb-2 text-success">
+                    <span><strong>Discount (<%= priceBreakdown.discountPercent %>%):</strong></span>
+                    <span class="fw-bold">-$<%= priceBreakdown.discount.toFixed(2) %></span>
+                  </div>
+                <% } %>
+                
+                <div class="d-flex justify-content-between mt-3 pt-3 border-top border-primary border-2">
+                  <span class="h4 fw-bold text-primary mb-0">TOTAL:</span>
+                  <span class="h4 fw-bold text-primary mb-0">$<%= priceBreakdown.total.toFixed(2) %></span>
+                </div>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+      
+      <!-- Submit Button -->
+      <div class="text-center mt-4">
+        <form action="/payment" method="post" class="d-inline" id="paymentForm">
+          <input type="hidden" name="comments" id="hiddenComments">
+          <button type="submit" class="btn btn-primary btn-lg px-5">
+            Proceed to Payment <i class="bi bi-arrow-right ms-2"></i>
+          </button>
+        </form>
+      </div>
+
+<script>
+// Save comments to hidden field before form submission
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+  const comments = document.getElementById('comments').value;
+  document.getElementById('hiddenComments').value = comments;
+});
+
+// Also save comments when typing (in case they navigate away)
+document.getElementById('comments').addEventListener('blur', function() {
+  const form = document.getElementById('commentsForm');
+  const formData = new FormData(form);
+  
+  fetch('/review', {
+    method: 'POST',
+    body: formData
+  }).catch(err => console.error('Error saving comments:', err));
+});
+</script>
+    </div>
+  </div>
+</div>

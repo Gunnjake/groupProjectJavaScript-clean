@@ -1,0 +1,159 @@
+<!-- Cache-busting meta tags -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<!-- HERO SECTION WITH OVERLAY -->
+<section class="position-relative mb-5" style="height: 600px; overflow: hidden;" aria-label="Hero section">
+  <!-- Background Image -->
+  <img src="/images/groupphoto.png" alt="Huus Cleaning team members providing professional cleaning services" class="w-100 h-100" style="object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;" role="presentation">
+  
+  <!-- Content Overlay -->
+  <div class="container position-relative h-100" style="z-index: 3;">
+    <div class="row align-items-center h-100">
+      <div class="col-lg-6 text-white">
+        <h1 class="display-3 fw-bold mb-3 text-white">Take back your time<br>Outsource your cleaning</h1>
+        <p class="lead mb-4 text-white">Find Your Reliable Wasatch Cleaning Services</p>
+        <a href="/cleaningType" class="btn btn-light btn-lg mb-4" aria-label="Get an instant quote for cleaning services">Get an instant quote</a>
+      </div>
+      
+      <!-- Booking Form Overlay -->
+      <div class="col-lg-6">
+        <div class="card shadow-lg border-0 bg-white" id="book">
+          <div class="card-body p-4">
+            <% if (session && session.message) { %>
+              <div class="alert alert-info"><%= session.message %></div>
+            <% } %>
+            
+            <h5 class="card-title mb-3">Book Your Cleaning</h5>
+            <form action="/cleaningType" method="get" id="homepageBookingForm" aria-label="Booking form">
+              <div class="row g-3">
+                <!-- Zip Code -->
+                <div class="col-md-6">
+                  <label for="homepage-zip" class="form-label">Zip Code</label>
+                  <input id="homepage-zip" name="zip" type="text" class="form-control" placeholder="Your Zip Code" value="<%= typeof prefill !== 'undefined' && prefill.zip ? prefill.zip : '' %>" required aria-required="true">
+                </div>
+                
+                <!-- Bedrooms -->
+                <div class="col-md-6">
+                  <label for="homepage-bedrooms" class="form-label">Bedrooms</label>
+                  <select id="homepage-bedrooms" name="bedrooms" class="form-select" required aria-required="true">
+                    <option value="" disabled <%= !prefill.bedrooms ? 'selected' : '' %>>Select Bedrooms</option>
+                    <% 
+                      const bedroomOptionsList = typeof bedroomOptions !== 'undefined' && bedroomOptions.length > 0 
+                        ? bedroomOptions 
+                        : [
+                            { value: '1', label: '1 Bedroom' },
+                            { value: '2', label: '2 Bedrooms' },
+                            { value: '3', label: '3 Bedrooms' },
+                            { value: '4', label: '4 Bedrooms' }
+                          ];
+                    %>
+                    <% bedroomOptionsList.forEach(opt => { %>
+                      <option value="<%= opt.value %>" <%= prefill.bedrooms === opt.value ? 'selected' : '' %>>
+                        <%= opt.label %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+                
+                <!-- Type of Cleaning -->
+                <div class="col-12">
+                  <label for="homepage-cleaningType" class="form-label">Type of Cleaning</label>
+                  <select id="homepage-cleaningType" name="cleaningType" class="form-select" required aria-required="true">
+                    <option value="" disabled <%= !prefill.cleaningType ? 'selected' : '' %>>Select Cleaning Type</option>
+                    <% 
+                      const cleaningTypesList = typeof cleaningTypes !== 'undefined' && cleaningTypes.length > 0 
+                        ? cleaningTypes 
+                        : ['Residential Cleaning', 'Vacation Rental'];
+                    %>
+                    <% cleaningTypesList.forEach(type => { %>
+                      <option value="<%= type %>" <%= prefill.cleaningType === type ? 'selected' : '' %>>
+                        <%= type %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+                
+                <!-- Phone -->
+                <div class="col-md-6">
+                  <label for="homepage-phone" class="form-label">Phone</label>
+                  <input id="homepage-phone" name="phone" type="tel" class="form-control" placeholder="Your Phone" value="<%= typeof prefill !== 'undefined' && prefill.phone ? prefill.phone : '' %>" required aria-required="true">
+                </div>
+                
+                <!-- Email -->
+                <div class="col-md-6">
+                  <label for="homepage-email" class="form-label">Email</label>
+                  <input id="homepage-email" name="email" type="email" class="form-control" placeholder="Your Email" value="<%= typeof prefill !== 'undefined' && prefill.email ? prefill.email : '' %>" required aria-required="true">
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="col-12">
+                  <button type="submit" class="btn btn-primary w-100" aria-label="Submit booking form">Book Now</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES SECTION - FULL WIDTH -->
+<section id="services" class="py-5" aria-label="Our Services">
+  <div class="container-fluid px-4">
+    <div class="text-center mb-5">
+      <h2 class="display-5 fw-bold text-primary mb-3">Our Services</h2>
+      <p class="lead text-muted">Professional cleaning solutions tailored to your needs</p>
+    </div>
+    
+    <div class="row g-4">
+      <% services.forEach(s => { %>
+        <div class="col-md-6">
+          <div class="card shadow-sm border-0 overflow-hidden h-100">
+            <div class="row g-0 h-100">
+              <div class="col-md-5">
+                <% 
+                  let serviceImage = '/images/groupphoto.png';
+                  const titleLower = s.title.toLowerCase();
+                  if (titleLower.includes('window') || titleLower.includes('glass')) {
+                    serviceImage = '/images/WindowCleaning.jpg';
+                  } else if (titleLower.includes('dish') || titleLower.includes('washing')) {
+                    serviceImage = '/images/DishWashing.jpg';
+                  } else if (titleLower.includes('laundry')) {
+                    serviceImage = '/images/Laundry.jpg';
+                  } else if (titleLower.includes('oven') || titleLower.includes('kitchen')) {
+                    serviceImage = '/images/Oven.jpg';
+                  } else if (titleLower.includes('fridge') || titleLower.includes('refrigerator')) {
+                    serviceImage = '/images/Fridge.jpg';
+                  } else if (titleLower.includes('residential') || titleLower.includes('home')) {
+                    serviceImage = '/images/Residential.jpg';
+                  } else if (titleLower.includes('vacation') || titleLower.includes('rental')) {
+                    serviceImage = '/images/Vacation.jpg';
+                  }
+                %>
+                <img src="<%= serviceImage %>" alt="<%= s.title %>" class="w-100 h-100" style="min-height: 400px; object-fit: cover;">
+              </div>
+              <div class="col-md-7">
+                <div class="card-body d-flex flex-column p-5 h-100">
+                  <h4 class="card-title text-primary mb-4 fs-2"><%= s.title %></h4>
+                  <ul class="list-unstyled mb-4 flex-grow-1">
+                    <% s.bullets.forEach(b => { %>
+                      <li class="mb-3 fs-5"><i class="bi bi-check-circle-fill text-primary me-2"></i><%= b %></li>
+                    <% }) %>
+                  </ul>
+                  <a href="/cleaningType" class="btn btn-primary btn-lg w-100 mt-auto" aria-label="Book <%= s.title %> service">Book Now</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS SECTION -->
+<%- include("partials/testimonials", { testimonials }) %>
+

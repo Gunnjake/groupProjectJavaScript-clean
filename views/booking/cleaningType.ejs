@@ -1,0 +1,372 @@
+<!-- cleaningType.ejs - Bootstrap 5 Styled -->
+
+<style>
+/* Professional Selection Cards */
+.selection-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: #ffffff;
+  padding: 2rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.selection-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.selection-card:hover {
+  border-color: #E5482E;
+  box-shadow: 0 8px 24px rgba(229, 72, 46, 0.12);
+  transform: translateY(-4px);
+  background: #ffffff;
+}
+
+.selection-card:hover::before {
+  background: #E5482E;
+}
+
+.selection-card.selected {
+  border-color: #E5482E;
+  background: linear-gradient(to bottom, #fff5f3 0%, #ffffff 100%);
+  box-shadow: 0 8px 24px rgba(229, 72, 46, 0.2);
+  transform: translateY(-2px);
+}
+
+.selection-card.selected::before {
+  background: #E5482E;
+}
+
+.card-icon {
+  font-size: 2.75rem;
+  margin-bottom: 0.75rem;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.card-icon.is-unchecked {
+  color: #adb5bd;
+}
+
+.card-icon.is-checked {
+  color: #E5482E;
+}
+
+.selection-card.selected .card-icon {
+  transform: scale(1.1);
+}
+
+.selection-card p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2F3C48;
+  margin: 0;
+}
+
+.selection-card.selected p {
+  color: #E5482E;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  display: none;
+}
+
+/* Price badge in cards */
+.price-badge {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #E5482E;
+  margin-top: 0.5rem;
+}
+</style>
+
+<style>
+  /* Remove top padding from main for booking pages */
+  main.py-5 {
+    padding-top: 0 !important;
+  }
+</style>
+
+<div class="container pt-2 pb-5">
+  <!-- Breadcrumbs and Price Summary Row -->
+  <div class="row align-items-center mb-3">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb" class="mb-0">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item active">1. Cleaning Details</li>
+          <li class="breadcrumb-item text-muted">2. Extras</li>
+          <li class="breadcrumb-item text-muted">3. Frequency</li>
+          <li class="breadcrumb-item text-muted">4. Your Details</li>
+          <li class="breadcrumb-item text-muted">5. Review</li>
+          <li class="breadcrumb-item text-muted">6. Payment</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <!-- Price Summary - Orange Box (Dynamic) -->
+      <span id="topPriceBadge" class="badge" style="background-color: #E5482E; color: white; font-size: 1.1rem; padding: 0.5rem 1rem; display: none;">
+        +$0.00
+      </span>
+    </div>
+  </div>
+
+  <!-- Page Header -->
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold text-dark mb-3">Select Your Cleaning Details</h1>
+    <p class="lead text-muted">Choose the size of your home and cleaning type</p>
+  </div>
+
+  <form action="/extra" method="POST" id="cleaningTypeForm" class="booking-step-form">
+
+    <% 
+      // Use bedroomOptions from database, or fallback if not provided
+      const bedroomOptionsList = typeof bedroomOptions !== 'undefined' && bedroomOptions.length > 0
+        ? bedroomOptions
+        : [
+            { value: "1", label: "1 Bedroom", icon: "🏠" },
+            { value: "2", label: "2 Bedrooms", icon: "🏡" },
+            { value: "3", label: "3 Bedrooms", icon: "🏘️" },
+            { value: "4", label: "4 Bedrooms", icon: "🏘️+" }
+          ];
+
+      // Use cleaningTypes from database, or fallback if not provided
+      const cleaningOptions = typeof cleaningTypes !== 'undefined' && cleaningTypes.length > 0 
+        ? cleaningTypes 
+        : [
+            { value: "Residential", label: "Residential Cleaning", icon: "🧹", id: 3000 },
+            { value: "Vacation Rental", label: "Vacation Rental", icon: "🛎️", id: 3001 }
+          ];
+      
+      // Get bedroom prices data
+      const bedroomPricesData = typeof bedroomPrices !== 'undefined' ? bedroomPrices : {};
+    %>
+
+    <!-- Cleaning Type Selection -->
+    <div class="mb-5">
+      <h3 class="h5 fw-bold text-dark text-center mb-4">
+        <i class="bi bi-broom me-2 text-primary"></i>Cleaning Type
+      </h3>
+      <div class="row g-4 justify-content-center">
+        <% 
+          const prefillCleaningType = session.step1?.cleaningType || session.homepageData?.cleaningType || '';
+        %>
+        <% cleaningOptions.forEach(opt => { %>
+          <div class="col-6 col-md-4 col-lg-3">
+            <label class="selection-card w-100" for="ct_<%= opt.value.replace(/\s+/g, '_') %>">
+              <input
+                type="radio"
+                id="ct_<%= opt.value.replace(/\s+/g, '_') %>"
+                name="cleaningType"
+                value="<%= opt.value %>"
+                required
+                data-cleaning-type-id="<%= opt.id || '' %>"
+                <%= prefillCleaningType === opt.value ? 'checked' : '' %>
+              >
+              <span class="card-icon" data-icon="ct_<%= opt.value %>">
+                <% if (opt.value.toLowerCase().includes('residential')) { %>
+                  <i class="bi bi-house-door-fill"></i>
+                <% } else if (opt.value.toLowerCase().includes('vacation')) { %>
+                  <i class="bi bi-house-check-fill"></i>
+                <% } else { %>
+                  <i class="bi bi-broom"></i>
+                <% } %>
+              </span>
+              <p class="mt-2 mb-0 fw-semibold"><%= opt.label %></p>
+            </label>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Home Size Selection -->
+    <div class="mb-5">
+      <h3 class="h5 fw-bold text-dark text-center mb-4">
+        <i class="bi bi-layout-text-window me-2 text-primary"></i>Home Size
+      </h3>
+      <div class="row g-4 justify-content-center">
+        <% 
+          const prefillBedrooms = session.step1?.bedrooms || session.homepageData?.bedrooms || '';
+        %>
+        <% bedroomOptionsList.forEach(o => { %>
+          <div class="col-6 col-md-4 col-lg-3">
+            <label class="selection-card w-100" for="bed_<%= o.value %>">
+              <input
+                type="radio"
+                id="bed_<%= o.value %>"
+                name="bedrooms"
+                value="<%= o.value %>"
+                required
+                <%= prefillBedrooms === o.value ? 'checked' : '' %>
+              >
+              <span class="card-icon" data-icon="bed_<%= o.value %>">
+                <i class="bi bi-door-open"></i>
+              </span>
+              <p class="mt-2 mb-1 fw-semibold"><%= o.label %></p>
+              <p class="mt-1 price-badge" id="bed_price_<%= o.value %>" style="display: none;">
+                $<span id="bed_price_value_<%= o.value %>">0</span>
+              </p>
+            </label>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    
+    <!-- Store bedroom prices for JavaScript -->
+    <script>
+      const bedroomPricesJS = <%- JSON.stringify(bedroomPricesData || {}) %>;
+      const initialPriceInfo = <%- JSON.stringify(typeof priceInfo !== 'undefined' ? priceInfo : { basePrice: 0, extrasTotal: 0, subtotal: 0 }) %>;
+    </script>
+
+    <!-- Submit Button -->
+    <div class="text-center mt-5 pt-4 border-top">
+      <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-semibold shadow-sm">
+        Continue to Extras <i class="bi bi-arrow-right ms-2"></i>
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("cleaningTypeForm");
+  const inputs = form.querySelectorAll("input[type='radio']");
+  const bedroomInputs = form.querySelectorAll("input[name='bedrooms']");
+  const cleaningTypeInputs = form.querySelectorAll("input[name='cleaningType']");
+
+  // Function to update top price badge
+  function updateTopPrice() {
+    const topPriceBadge = document.getElementById('topPriceBadge');
+    if (!topPriceBadge) return;
+    
+    const selectedCleaningType = document.querySelector("input[name='cleaningType']:checked");
+    const selectedBedrooms = document.querySelector("input[name='bedrooms']:checked");
+    
+    if (!selectedCleaningType || !selectedBedrooms) {
+      topPriceBadge.style.display = 'none';
+      return;
+    }
+    
+    const cleaningTypeId = parseInt(selectedCleaningType.dataset.cleaningTypeId);
+    const prices = bedroomPricesJS[cleaningTypeId] || {};
+    const bedroomCount = selectedBedrooms.value;
+    const basePrice = prices[bedroomCount] || 0;
+    
+    if (basePrice > 0) {
+      topPriceBadge.textContent = `+$${basePrice.toFixed(2)}`;
+      topPriceBadge.style.display = 'inline-block';
+    } else {
+      topPriceBadge.style.display = 'none';
+    }
+  }
+
+  function updateBedroomPrices() {
+    const selectedCleaningType = document.querySelector("input[name='cleaningType']:checked");
+    if (!selectedCleaningType) {
+      // If no cleaning type selected, hide all bedroom prices
+      bedroomInputs.forEach(bedInput => {
+        const priceDisplay = document.getElementById(`bed_price_${bedInput.value}`);
+        if (priceDisplay) {
+          priceDisplay.style.display = 'none';
+        }
+      });
+      updateTopPrice();
+      return;
+    }
+    
+    const cleaningTypeId = parseInt(selectedCleaningType.dataset.cleaningTypeId);
+    const prices = bedroomPricesJS[cleaningTypeId] || {};
+    
+    // Update prices for each bedroom option
+    bedroomInputs.forEach(bedInput => {
+      const bedroomCount = bedInput.value;
+      const price = prices[bedroomCount] || 0;
+      const priceDisplay = document.getElementById(`bed_price_${bedroomCount}`);
+      const priceVal = document.getElementById(`bed_price_value_${bedroomCount}`);
+      
+      if (priceDisplay && priceVal) {
+        if (price > 0) {
+          priceVal.textContent = price;
+          priceDisplay.style.display = 'block';
+        } else {
+          priceDisplay.style.display = 'none';
+        }
+      }
+    });
+    
+    updateTopPrice();
+  }
+
+      // Update prices when cleaning type is selected
+      cleaningTypeInputs.forEach(input => {
+        input.addEventListener("change", updateBedroomPrices);
+      });
+
+      // Initialize card selection behavior
+      inputs.forEach(input => {
+        const card = input.closest(".selection-card");
+        const icon = card.querySelector("[data-icon]");
+
+        // Mark as checked if input is pre-checked
+        if (input.checked) {
+          card.classList.add("selected");
+          icon.classList.add("is-checked");
+          icon.classList.remove("is-unchecked");
+        } else {
+          icon.classList.add("is-unchecked");
+        }
+
+        card.addEventListener("click", () => {
+          // Clear other cards in same group
+          const groupName = input.name;
+
+          form.querySelectorAll(`input[name='${groupName}']`).forEach(i => {
+            const c = i.closest(".selection-card");
+            const ic = c.querySelector("[data-icon]");
+            c.classList.remove("selected");
+            ic.classList.remove("is-checked");
+            ic.classList.add("is-unchecked");
+          });
+
+          input.checked = true;
+          card.classList.add("selected");
+          icon.classList.add("is-checked");
+          icon.classList.remove("is-unchecked");
+          
+          // Update prices and top badge
+          if (groupName === 'cleaningType' || groupName === 'bedrooms') {
+            updateBedroomPrices();
+          }
+          updateTopPrice();
+        });
+      });
+  
+  // Update prices on initial load if cleaning type is already selected
+  updateBedroomPrices();
+  
+  // Initialize top price badge
+  if (initialPriceInfo.subtotal > 0) {
+    const topPriceBadge = document.getElementById('topPriceBadge');
+    if (topPriceBadge) {
+      topPriceBadge.textContent = `+$${initialPriceInfo.subtotal.toFixed(2)}`;
+      topPriceBadge.style.display = 'inline-block';
+    }
+  }
+});
+</script>
